@@ -28,6 +28,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   // Form Inputs states
   const [uploading, setUploading] = useState(false);
   const [newDocName, setNewDocName] = useState('');
+  const [selectedDocFile, setSelectedDocFile] = useState<File | null>(null);
   
   // Qualification list inputs & edit modal
   const [newQual, setNewQual] = useState({ level: '', institute: '', year: '', url: '' });
@@ -38,16 +39,27 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const [editQualUploading, setEditQualUploading] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
-  // Skills list inputs
+  // Skills list inputs & edit modal
   const [newSkill, setNewSkill] = useState({ name: '', proficiency: '' });
+  const [editingSkillIdx, setEditingSkillIdx] = useState<number | null>(null);
+  const [editSkillData, setEditSkillData] = useState({ name: '', proficiency: '' });
+  const [editSkillModalOpen, setEditSkillModalOpen] = useState(false);
 
-  // Experience list inputs
+  // Experience list inputs & edit modal
   const [newExp, setNewExp] = useState({ company: '', role: '', duration: '', url: '' });
   const [expUploading, setExpUploading] = useState(false);
+  const [editingExpIdx, setEditingExpIdx] = useState<number | null>(null);
+  const [editExpData, setEditExpData] = useState({ company: '', role: '', duration: '', url: '' });
+  const [editExpModalOpen, setEditExpModalOpen] = useState(false);
+  const [editExpUploading, setEditExpUploading] = useState(false);
 
-  // Contract list inputs
+  // Contract list inputs & edit modal
   const [newContract, setNewContract] = useState({ title: '', startDate: '', endDate: '', url: '' });
   const [contractUploading, setContractUploading] = useState(false);
+  const [editingContractIdx, setEditingContractIdx] = useState<number | null>(null);
+  const [editContractData, setEditContractData] = useState({ title: '', startDate: '', endDate: '', url: '' });
+  const [editContractModalOpen, setEditContractModalOpen] = useState(false);
+  const [editContractUploading, setEditContractUploading] = useState(false);
 
   // Resignation list inputs & edit modal
   const [newResignation, setNewResignation] = useState({ date: new Date().toISOString().split('T')[0], reason: '', status: 'Completed', url: '' });
@@ -56,11 +68,18 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const [editResignationData, setEditResignationData] = useState({ date: '', reason: '', status: 'Completed', url: '' });
   const [editResignationModalOpen, setEditResignationModalOpen] = useState(false);
 
-  // Reference list inputs
+  // Reference list inputs & edit modal
   const [newRef, setNewRef] = useState({ name: '', designation: '', contact: '', email: '', company: '' });
+  const [editingRefIdx, setEditingRefIdx] = useState<number | null>(null);
+  const [editRefData, setEditRefData] = useState({ name: '', designation: '', contact: '', email: '', company: '' });
+  const [editRefModalOpen, setEditRefModalOpen] = useState(false);
 
-  // Disciplinary Case list inputs
+  // Disciplinary Case list inputs & edit modal
   const [newDisc, setNewDisc] = useState({ date: '', issue: '', actionTaken: '', severity: 'Low', url: '' });
+  const [editingDiscIdx, setEditingDiscIdx] = useState<number | null>(null);
+  const [editDiscData, setEditDiscData] = useState({ date: '', issue: '', actionTaken: '', severity: 'Low', url: '' });
+  const [editDiscModalOpen, setEditDiscModalOpen] = useState(false);
+  const [editDiscUploading, setEditDiscUploading] = useState(false);
 
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState<{
@@ -243,7 +262,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   const handleGeneralFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    target: 'doc' | 'qual' | 'edit_qual' | 'exp' | 'disc' | 'contract' | 'resignation' | 'edit_resignation' | 'profile_avatar'
+    target: 'doc' | 'qual' | 'edit_qual' | 'exp' | 'edit_exp' | 'disc' | 'edit_disc' | 'contract' | 'edit_contract' | 'resignation' | 'edit_resignation' | 'profile_avatar'
   ) => {
     if (!e.target.files?.[0]) return;
     const file = e.target.files[0];
@@ -254,7 +273,11 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     else if (target === 'edit_qual') setEditQualUploading(true);
     else if (target === 'profile_avatar') setAvatarUploading(true);
     else if (target === 'exp') setExpUploading(true);
+    else if (target === 'edit_exp') setEditExpUploading(true);
     else if (target === 'contract') setContractUploading(true);
+    else if (target === 'edit_contract') setEditContractUploading(true);
+    else if (target === 'disc') setUploading(true);
+    else if (target === 'edit_disc') setEditDiscUploading(true);
     else if (target === 'resignation' || target === 'edit_resignation') setResignationUploading(true);
     else setUploading(true);
 
@@ -283,11 +306,20 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         } else if (target === 'exp') {
           setNewExp(prev => ({ ...prev, url: data.url }));
           toast.success('Experience document attached');
+        } else if (target === 'edit_exp') {
+          setEditExpData(prev => ({ ...prev, url: data.url }));
+          toast.success('Experience document attached');
         } else if (target === 'disc') {
           setNewDisc(prev => ({ ...prev, url: data.url }));
           toast.success('Disciplinary document attached');
+        } else if (target === 'edit_disc') {
+          setEditDiscData(prev => ({ ...prev, url: data.url }));
+          toast.success('Disciplinary document attached');
         } else if (target === 'contract') {
           setNewContract(prev => ({ ...prev, url: data.url }));
+          toast.success('Contract document attached');
+        } else if (target === 'edit_contract') {
+          setEditContractData(prev => ({ ...prev, url: data.url }));
           toast.success('Contract document attached');
         } else if (target === 'resignation') {
           setNewResignation(prev => ({ ...prev, url: data.url }));
@@ -295,16 +327,6 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         } else if (target === 'edit_resignation') {
           setEditResignationData(prev => ({ ...prev, url: data.url }));
           toast.success('Resignation document attached');
-        } else {
-          const docObj = {
-            name: newDocName || file.name,
-            url: data.url,
-            publicId: data.publicId,
-            fileType: file.type
-          };
-          const updatedDocs = [...(employee?.documents || []), docObj];
-          await updateEmployeeAPI({ ...employee, documents: updatedDocs }, 'Document uploaded successfully');
-          setNewDocName('');
         }
       } else {
         toast.error(data.error || 'Upload failed');
@@ -317,8 +339,45 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       setEditQualUploading(false);
       setAvatarUploading(false);
       setExpUploading(false);
+      setEditExpUploading(false);
       setContractUploading(false);
+      setEditContractUploading(false);
+      setEditDiscUploading(false);
       setResignationUploading(false);
+      setUploading(false);
+    }
+  };
+
+  const handleUploadSelectedDoc = async () => {
+    if (!selectedDocFile) {
+      toast.error('Please select a file to upload first');
+      return;
+    }
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', selectedDocFile);
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok) {
+        const docObj = {
+          name: newDocName.trim() || selectedDocFile.name,
+          url: data.url,
+          publicId: data.publicId,
+          fileType: selectedDocFile.type
+        };
+        const updatedDocs = [...(employee?.documents || []), docObj];
+        await updateEmployeeAPI({ ...employee, documents: updatedDocs }, 'Document uploaded successfully');
+        setNewDocName('');
+        setSelectedDocFile(null);
+      } else {
+        toast.error(data.error || 'Upload failed');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('File upload failed');
+    } finally {
       setUploading(false);
     }
   };
@@ -432,6 +491,29 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   // --- Skills Handling ---
+  const handleOpenEditSkill = (idx: number, s: any) => {
+    setEditingSkillIdx(idx);
+    setEditSkillData({
+      name: s.name || '',
+      proficiency: s.proficiency || '',
+    });
+    setEditSkillModalOpen(true);
+  };
+
+  const handleSaveEditSkill = async () => {
+    if (editingSkillIdx === null) return;
+    const val = skillSchema.safeParse(editSkillData);
+    if (!val.success) { toast.error(val.error.issues[0].message); return; }
+
+    const skills = [...(employee?.skills || [])];
+    skills[editingSkillIdx] = editSkillData;
+
+    await updateEmployeeAPI({ ...employee, skills }, 'Skill specification updated');
+
+    setEditSkillModalOpen(false);
+    setEditingSkillIdx(null);
+  };
+
   const handleAddSkill = async () => {
     const val = skillSchema.safeParse(newSkill);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -441,6 +523,31 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   // --- Experience Handling ---
+  const handleOpenEditExp = (idx: number, ex: any) => {
+    setEditingExpIdx(idx);
+    setEditExpData({
+      company: ex.company || '',
+      role: ex.role || '',
+      duration: ex.duration || '',
+      url: ex.url || '',
+    });
+    setEditExpModalOpen(true);
+  };
+
+  const handleSaveEditExp = async () => {
+    if (editingExpIdx === null) return;
+    const val = experienceSchema.safeParse(editExpData);
+    if (!val.success) { toast.error(val.error.issues[0].message); return; }
+
+    const experience = [...(employee?.experience || [])];
+    experience[editingExpIdx] = editExpData;
+
+    await updateEmployeeAPI({ ...employee, experience }, 'Experience record updated');
+
+    setEditExpModalOpen(false);
+    setEditingExpIdx(null);
+  };
+
   const handleAddExp = async () => {
     const val = experienceSchema.safeParse(newExp);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -450,6 +557,32 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   // --- Reference Handling ---
+  const handleOpenEditRef = (idx: number, r: any) => {
+    setEditingRefIdx(idx);
+    setEditRefData({
+      name: r.name || '',
+      designation: r.designation || '',
+      contact: r.contact || '',
+      email: r.email || '',
+      company: r.company || '',
+    });
+    setEditRefModalOpen(true);
+  };
+
+  const handleSaveEditRef = async () => {
+    if (editingRefIdx === null) return;
+    const val = referenceSchema.safeParse(editRefData);
+    if (!val.success) { toast.error(val.error.issues[0].message); return; }
+
+    const references = [...(employee?.references || [])];
+    references[editingRefIdx] = editRefData;
+
+    await updateEmployeeAPI({ ...employee, references }, 'Reference record updated');
+
+    setEditRefModalOpen(false);
+    setEditingRefIdx(null);
+  };
+
   const handleAddRef = async () => {
     const val = referenceSchema.safeParse(newRef);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -459,6 +592,34 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   // --- Contract Handling ---
+  const handleOpenEditContract = (idx: number, c: any) => {
+    setEditingContractIdx(idx);
+    setEditContractData({
+      title: c.title || '',
+      startDate: c.startDate || '',
+      endDate: c.endDate || '',
+      url: c.url || '',
+    });
+    setEditContractModalOpen(true);
+  };
+
+  const handleSaveEditContract = async () => {
+    if (editingContractIdx === null) return;
+    const val = contractSchema.safeParse(editContractData);
+    if (!val.success) { toast.error(val.error.issues[0].message); return; }
+
+    const contracts = [...(employee?.officeActivities?.contracts || [])];
+    contracts[editingContractIdx] = editContractData;
+
+    await updateEmployeeAPI({
+      ...employee,
+      officeActivities: { ...(employee?.officeActivities || {}), contracts }
+    }, 'Contract record updated');
+
+    setEditContractModalOpen(false);
+    setEditingContractIdx(null);
+  };
+
   const handleAddContract = async () => {
     const val = contractSchema.safeParse(newContract);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -471,6 +632,35 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   // --- Disciplinary Handling ---
+  const handleOpenEditDisc = (idx: number, d: any) => {
+    setEditingDiscIdx(idx);
+    setEditDiscData({
+      date: d.date || '',
+      issue: d.issue || '',
+      actionTaken: d.actionTaken || '',
+      severity: d.severity || 'Low',
+      url: d.url || '',
+    });
+    setEditDiscModalOpen(true);
+  };
+
+  const handleSaveEditDisc = async () => {
+    if (editingDiscIdx === null) return;
+    const val = disciplinarySchema.safeParse(editDiscData);
+    if (!val.success) { toast.error(val.error.issues[0].message); return; }
+
+    const disciplinaryCases = [...(employee?.officeActivities?.disciplinaryCases || [])];
+    disciplinaryCases[editingDiscIdx] = editDiscData;
+
+    await updateEmployeeAPI({
+      ...employee,
+      officeActivities: { ...(employee?.officeActivities || {}), disciplinaryCases }
+    }, 'Disciplinary case updated');
+
+    setEditDiscModalOpen(false);
+    setEditingDiscIdx(null);
+  };
+
   const handleAddDisc = async () => {
     const val = disciplinarySchema.safeParse(newDisc);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -651,109 +841,135 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left column: Sidebar Information */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-4 xl:col-span-3.5 space-y-6">
           
           {/* Personal Info Card */}
-          <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 shadow-xl space-y-4">
-            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 tracking-wider uppercase border-b border-slate-200 dark:border-slate-700/60 pb-2">Personal Summary</h3>
+          <div className="bg-white/90 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/60 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700/60 pb-3">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wider uppercase flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                Personal Summary
+              </h3>
+            </div>
             
-            <div className="space-y-3.5 text-xs text-slate-700 dark:text-slate-300">
-              <div className="flex flex-col justify-center min-h-[40px]">
-                <span className="text-slate-500 dark:text-slate-400 block mb-0.5">Birth Date (Age):</span>
-                {isEditing ? (
-                  <input
-                    type="date"
-                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1.5 rounded-xl focus:outline-none w-full text-xs text-slate-900 dark:text-white"
-                    value={editForm?.personalInfo?.birthDate || ''}
-                    onChange={(e) => handleNestedFieldChange('personalInfo', 'birthDate', e.target.value)}
-                  />
-                ) : (
-                  <span className="font-semibold text-slate-900 dark:text-white">
-                    {employee?.personalInfo?.birthDate || 'N/A'}{' '}
-                    {employee?.personalInfo?.birthDate && `(${calculateDateDifference(employee.personalInfo.birthDate)})`}
+            <div className="space-y-3.5 text-xs">
+              {/* Birth Date & Age Side-by-Side Card */}
+              <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-3 space-y-2 shadow-2xs">
+                <div className="grid grid-cols-2 gap-2 items-center">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Birth Date</span>
+                    {isEditing ? (
+                      <input
+                        type="date"
+                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1.5 rounded-lg focus:outline-none w-full text-xs text-slate-900 dark:text-white"
+                        value={editForm?.personalInfo?.birthDate || ''}
+                        onChange={(e) => handleNestedFieldChange('personalInfo', 'birthDate', e.target.value)}
+                      />
+                    ) : (
+                      <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                        {employee?.personalInfo?.birthDate || 'N/A'}
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Age</span>
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                      {employee?.personalInfo?.birthDate ? calculateDateDifference(employee.personalInfo.birthDate) : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Religion & Marital Status Side by Side */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-2.5">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Religion</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-full text-xs text-slate-900 dark:text-white"
+                      value={editForm?.personalInfo?.religion || ''}
+                      onChange={(e) => handleNestedFieldChange('personalInfo', 'religion', e.target.value)}
+                    />
+                  ) : (
+                    <span className="font-semibold text-slate-900 dark:text-white block">{employee?.personalInfo?.religion || 'N/A'}</span>
+                  )}
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-2.5">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Marital Status</span>
+                  {isEditing ? (
+                    <select
+                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-full text-xs text-slate-900 dark:text-white"
+                      value={editForm?.personalInfo?.maritalStatus || ''}
+                      onChange={(e) => handleNestedFieldChange('personalInfo', 'maritalStatus', e.target.value)}
+                    >
+                      <option value="">Unspecified</option>
+                      <option value="Single">Single</option>
+                      <option value="Married">Married</option>
+                      <option value="Divorced">Divorced</option>
+                    </select>
+                  ) : (
+                    <span className="font-semibold text-slate-900 dark:text-white block">{employee?.personalInfo?.maritalStatus || 'N/A'}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Gender & Blood Group Side by Side */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-2.5">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Gender</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-full text-xs text-slate-900 dark:text-white"
+                      value={editForm?.personalInfo?.gender || ''}
+                      onChange={(e) => handleNestedFieldChange('personalInfo', 'gender', e.target.value)}
+                    />
+                  ) : (
+                    <span className="font-semibold text-slate-900 dark:text-white block">{employee?.personalInfo?.gender || 'N/A'}</span>
+                  )}
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-2.5">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Blood Group</span>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-full text-rose-500 dark:text-rose-400 font-bold text-xs"
+                      value={editForm?.personalInfo?.bloodGroup || ''}
+                      onChange={(e) => handleNestedFieldChange('personalInfo', 'bloodGroup', e.target.value)}
+                    />
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                      {employee?.personalInfo?.bloodGroup || 'N/A'}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Join Date & Service Period */}
+              <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Join Date:</span>
+                  {isEditing ? (
+                    <input
+                      type="date"
+                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-32 text-xs text-slate-900 dark:text-white"
+                      value={editForm?.personalInfo?.joinDate || ''}
+                      onChange={(e) => handleNestedFieldChange('personalInfo', 'joinDate', e.target.value)}
+                    />
+                  ) : (
+                    <span className="font-semibold text-slate-900 dark:text-white">{employee?.personalInfo?.joinDate || 'N/A'}</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 dark:border-slate-800">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Service Period:</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs">
+                    {employee?.personalInfo?.joinDate ? calculateDateDifference(employee.personalInfo.joinDate) : 'N/A'}
                   </span>
-                )}
-              </div>
-
-              <div className="flex justify-between items-center min-h-[32px]">
-                <span className="text-slate-500 dark:text-slate-400">Religion:</span>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-32 text-xs text-slate-900 dark:text-white"
-                    value={editForm?.personalInfo?.religion || ''}
-                    onChange={(e) => handleNestedFieldChange('personalInfo', 'religion', e.target.value)}
-                  />
-                ) : (
-                  <span className="font-semibold text-slate-900 dark:text-white">{employee?.personalInfo?.religion || 'N/A'}</span>
-                )}
-              </div>
-
-              <div className="flex justify-between items-center min-h-[32px]">
-                <span className="text-slate-500 dark:text-slate-400">Marital Status:</span>
-                {isEditing ? (
-                  <select
-                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-32 text-xs text-slate-900 dark:text-white"
-                    value={editForm?.personalInfo?.maritalStatus || ''}
-                    onChange={(e) => handleNestedFieldChange('personalInfo', 'maritalStatus', e.target.value)}
-                  >
-                    <option value="">Unspecified</option>
-                    <option value="Single">Single</option>
-                    <option value="Married">Married</option>
-                    <option value="Divorced">Divorced</option>
-                  </select>
-                ) : (
-                  <span className="font-semibold text-slate-900 dark:text-white">{employee?.personalInfo?.maritalStatus || 'N/A'}</span>
-                )}
-              </div>
-
-              <div className="flex justify-between items-center min-h-[32px]">
-                <span className="text-slate-500 dark:text-slate-400">Gender:</span>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-32 text-xs text-slate-900 dark:text-white"
-                    value={editForm?.personalInfo?.gender || ''}
-                    onChange={(e) => handleNestedFieldChange('personalInfo', 'gender', e.target.value)}
-                  />
-                ) : (
-                  <span className="font-semibold text-slate-900 dark:text-white">{employee?.personalInfo?.gender || 'N/A'}</span>
-                )}
-              </div>
-
-              <div className="flex flex-col justify-center min-h-[40px]">
-                <span className="text-slate-500 dark:text-slate-400 block mb-0.5">Join Date:</span>
-                {isEditing ? (
-                  <input
-                    type="date"
-                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1.5 rounded-xl focus:outline-none w-full text-xs text-slate-900 dark:text-white"
-                    value={editForm?.personalInfo?.joinDate || ''}
-                    onChange={(e) => handleNestedFieldChange('personalInfo', 'joinDate', e.target.value)}
-                  />
-                ) : (
-                  <span className="font-semibold text-slate-900 dark:text-white">{employee?.personalInfo?.joinDate || 'N/A'}</span>
-                )}
-              </div>
-
-              <div className="flex flex-col justify-center min-h-[40px]">
-                <span className="text-slate-500 dark:text-slate-400 block mb-0.5">Service Period (Dynamic):</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {employee?.personalInfo?.joinDate ? calculateDateDifference(employee.personalInfo.joinDate) : 'N/A'}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center min-h-[32px]">
-                <span className="text-slate-500 dark:text-slate-400">Blood Group:</span>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-32 text-rose-500 dark:text-rose-400 font-bold text-xs"
-                    value={editForm?.personalInfo?.bloodGroup || ''}
-                    onChange={(e) => handleNestedFieldChange('personalInfo', 'bloodGroup', e.target.value)}
-                  />
-                ) : (
-                  <span className="font-bold text-rose-500 dark:text-rose-400">{employee?.personalInfo?.bloodGroup || 'N/A'}</span>
-                )}
+                </div>
               </div>
             </div>
           </div>
@@ -780,7 +996,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         </div>
 
         {/* Right column: Dynamic Tabs Workspace Container */}
-        <div className="lg:col-span-9 space-y-6">
+        <div className="lg:col-span-8 xl:col-span-8.5 space-y-6">
           <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-2 shadow-xl flex items-center gap-1 overflow-x-auto scrollbar-none">
             {(activeMenu === 'profile' ? profileTabs : activityTabs).map(tab => (
               <button
@@ -1305,7 +1521,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                       <tr className="bg-slate-100 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-400 font-semibold uppercase">
                         <th className="p-3">Skill Name</th>
                         <th className="p-3">Proficiency</th>
-                        {(hasPermission('delete_skill') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_skill') || hasPermission('delete_skill') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1318,11 +1534,18 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                                 {s?.proficiency}
                               </span>
                             </td>
-                            {(hasPermission('delete_skill') || hasPermission('edit_employee')) && (
-                              <td className="p-3 text-right">
-                                <button onClick={() => setDeleteModal({ isOpen: true, type: 'skill', index: idx, itemName: s.name })} className="text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                            {(hasPermission('edit_skill') || hasPermission('delete_skill') || hasPermission('edit_employee')) && (
+                              <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                                {(hasPermission('edit_skill') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => handleOpenEditSkill(idx, s)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Skill">
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {(hasPermission('delete_skill') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => setDeleteModal({ isOpen: true, type: 'skill', index: idx, itemName: s.name })} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Skill">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </td>
                             )}
                           </tr>
@@ -1399,7 +1622,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <th className="p-3">Role</th>
                         <th className="p-3">Duration</th>
                         <th className="p-3">Attachment</th>
-                        {(hasPermission('delete_experience') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_experience') || hasPermission('delete_experience') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1416,11 +1639,18 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                                 </button>
                               ) : <span className="text-slate-400 dark:text-slate-500">No Attachment</span>}
                             </td>
-                            {(hasPermission('delete_experience') || hasPermission('edit_employee')) && (
-                              <td className="p-3 text-right">
-                                <button onClick={() => setDeleteModal({ isOpen: true, type: 'exp', index: idx, itemName: ex.company })} className="text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                            {(hasPermission('edit_experience') || hasPermission('delete_experience') || hasPermission('edit_employee')) && (
+                              <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                                {(hasPermission('edit_experience') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => handleOpenEditExp(idx, ex)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Experience">
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {(hasPermission('delete_experience') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => setDeleteModal({ isOpen: true, type: 'exp', index: idx, itemName: ex.company })} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Experience">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </td>
                             )}
                           </tr>
@@ -1493,7 +1723,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <th className="p-3">Designation</th>
                         <th className="p-3">Company</th>
                         <th className="p-3">Contact</th>
-                        {(hasPermission('delete_reference') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_reference') || hasPermission('delete_reference') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1504,11 +1734,18 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                             <td className="p-3 text-slate-700 dark:text-slate-300">{r?.designation || '-'}</td>
                             <td className="p-3 text-slate-700 dark:text-slate-300">{r?.company || '-'}</td>
                             <td className="p-3 text-slate-700 dark:text-slate-300">{r?.contact || r?.email || '-'}</td>
-                            {(hasPermission('delete_reference') || hasPermission('edit_employee')) && (
-                              <td className="p-3 text-right">
-                                <button onClick={() => setDeleteModal({ isOpen: true, type: 'ref', index: i, itemName: r.name })} className="text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                            {(hasPermission('edit_reference') || hasPermission('delete_reference') || hasPermission('edit_employee')) && (
+                              <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                                {(hasPermission('edit_reference') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => handleOpenEditRef(i, r)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Reference">
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {(hasPermission('delete_reference') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => setDeleteModal({ isOpen: true, type: 'ref', index: i, itemName: r.name })} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Reference">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </td>
                             )}
                           </tr>
@@ -1527,30 +1764,60 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Document Upload & Media Management</h4>
 
                 {(hasPermission('add_documents') || hasPermission('edit_employee')) && (
-                  <div className="bg-slate-50 dark:bg-slate-900/60 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-5 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 space-y-4 shadow-sm">
+                    <h5 className="font-semibold text-slate-800 dark:text-slate-200">Upload New Personnel Document</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Document Label Name</label>
                         <input
                           type="text"
-                          placeholder="e.g. CV, Citizenship Doc"
-                          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2 text-xs w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="e.g. CV, Citizenship Doc, Educational Certificate"
+                          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2.5 text-xs w-full rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                           value={newDocName}
                           onChange={e => setNewDocName(e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Select File (PDF / Image)</label>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Select Document File (PDF / Image)</label>
                         <input
                           type="file"
                           accept="application/pdf,image/*"
-                          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1.5 w-full text-xs text-slate-700 dark:text-slate-300 rounded-xl"
-                          onChange={e => handleGeneralFileUpload(e, 'doc')}
+                          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2 w-full text-xs text-slate-700 dark:text-slate-300 rounded-xl"
+                          onChange={e => {
+                            if (e.target.files?.[0]) setSelectedDocFile(e.target.files[0]);
+                          }}
                           disabled={uploading}
                         />
                       </div>
                     </div>
-                    {uploading && <p className="text-xs text-blue-600 dark:text-blue-400 font-medium animate-pulse">Uploading file to Cloudinary bucket...</p>}
+
+                    {selectedDocFile && (
+                      <div className="flex items-center justify-between bg-blue-50/70 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 px-3.5 py-2 rounded-xl text-xs">
+                        <div className="flex items-center gap-2 truncate">
+                          <FileText className="w-4 h-4 text-blue-500 shrink-0" />
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{selectedDocFile.name}</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0">({(selectedDocFile.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedDocFile(null)}
+                          className="text-slate-400 hover:text-rose-500 transition p-1 rounded-lg"
+                          title="Remove file selection"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end pt-1">
+                      <button
+                        onClick={handleUploadSelectedDoc}
+                        disabled={uploading || !selectedDocFile}
+                        className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs px-5 py-2 rounded-xl transition shadow-md flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        {uploading ? 'Uploading...' : 'Upload Document'}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -1670,7 +1937,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <th className="p-3">Start Date</th>
                         <th className="p-3">End Date</th>
                         <th className="p-3">Attachment</th>
-                        {(hasPermission('delete_contracts') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_contracts') || hasPermission('delete_contracts') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1687,11 +1954,18 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                                 </button>
                               ) : <span className="text-slate-400 dark:text-slate-500">No Attachment</span>}
                             </td>
-                            {(hasPermission('delete_contracts') || hasPermission('edit_employee')) && (
-                              <td className="p-3 text-right">
-                                <button onClick={() => setDeleteModal({ isOpen: true, type: 'contract', index: idx, itemName: c.title })} className="text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                            {(hasPermission('edit_contracts') || hasPermission('delete_contracts') || hasPermission('edit_employee')) && (
+                              <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                                {(hasPermission('edit_contracts') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => handleOpenEditContract(idx, c)} className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Contract">
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {(hasPermission('delete_contracts') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => setDeleteModal({ isOpen: true, type: 'contract', index: idx, itemName: c.title })} className="text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Contract">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </td>
                             )}
                           </tr>
@@ -1887,7 +2161,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <th className="p-3">Case / Issue</th>
                         <th className="p-3">Action Taken</th>
                         <th className="p-3">Attachment</th>
-                        {(hasPermission('delete_disciplinary') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_disciplinary') || hasPermission('delete_disciplinary') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1904,11 +2178,18 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                                 </button>
                               ) : <span className="text-slate-400 dark:text-slate-500">No File</span>}
                             </td>
-                            {(hasPermission('delete_disciplinary') || hasPermission('edit_employee')) && (
-                              <td className="p-3 text-right">
-                                <button onClick={() => setDeleteModal({ isOpen: true, type: 'disc', index: idx, itemName: d.issue })} className="text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                            {(hasPermission('edit_disciplinary') || hasPermission('delete_disciplinary') || hasPermission('edit_employee')) && (
+                              <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                                {(hasPermission('edit_disciplinary') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => handleOpenEditDisc(idx, d)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Disciplinary Case">
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {(hasPermission('delete_disciplinary') || hasPermission('edit_employee')) && (
+                                  <button onClick={() => setDeleteModal({ isOpen: true, type: 'disc', index: idx, itemName: d.issue })} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Disciplinary Case">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </td>
                             )}
                           </tr>
@@ -2009,6 +2290,388 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
 
 
+
+      {/* Edit Skill Modal */}
+      {editSkillModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setEditSkillModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 z-10 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Edit Skill Specification</h3>
+              <button onClick={() => setEditSkillModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Skill Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Node.js"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editSkillData.name}
+                  onChange={e => setEditSkillData({ ...editSkillData, name: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Proficiency Level *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Expert"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editSkillData.proficiency}
+                  onChange={e => setEditSkillData({ ...editSkillData, proficiency: e.target.value })}
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditSkillModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEditSkill}
+                  className="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md cursor-pointer"
+                >
+                  Save Skill Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Experience Modal */}
+      {editExpModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setEditExpModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 z-10 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Edit Experience Record</h3>
+              <button onClick={() => setEditExpModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Company Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Acme Corp"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editExpData.company}
+                  onChange={e => setEditExpData({ ...editExpData, company: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Role / Designation *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Senior Lead"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editExpData.role}
+                  onChange={e => setEditExpData({ ...editExpData, role: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Duration *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 2 Years"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editExpData.duration}
+                  onChange={e => setEditExpData({ ...editExpData, duration: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Experience Letter (PDF / Image)</label>
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl transition border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 w-full">
+                    <Upload className="w-3.5 h-3.5" />
+                    {editExpUploading ? 'Uploading...' : 'Choose File'}
+                    <input type="file" accept="application/pdf,image/*" className="hidden" onChange={e => handleGeneralFileUpload(e, 'edit_exp')} disabled={editExpUploading} />
+                  </label>
+                </div>
+                {editExpData.url && <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Attachment attached</p>}
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditExpModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEditExp}
+                  disabled={editExpUploading}
+                  className="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md disabled:opacity-50 cursor-pointer"
+                >
+                  Save Experience Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Reference Modal */}
+      {editRefModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setEditRefModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 z-10 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Edit Reference Record</h3>
+              <button onClick={() => setEditRefModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Reference Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. John Doe"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editRefData.name}
+                  onChange={e => setEditRefData({ ...editRefData, name: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Designation *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Director"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editRefData.designation}
+                  onChange={e => setEditRefData({ ...editRefData, designation: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Contact Phone *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. +977 9800000000"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editRefData.contact}
+                  onChange={e => setEditRefData({ ...editRefData, contact: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Email Address</label>
+                <input
+                  type="email"
+                  placeholder="e.g. ref@example.com"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editRefData.email}
+                  onChange={e => setEditRefData({ ...editRefData, email: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Company / Organization</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Tech Corp"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editRefData.company}
+                  onChange={e => setEditRefData({ ...editRefData, company: e.target.value })}
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditRefModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEditRef}
+                  className="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md cursor-pointer"
+                >
+                  Save Reference Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Contract Modal */}
+      {editContractModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setEditContractModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 z-10 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Edit Contract Record</h3>
+              <button onClick={() => setEditContractModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Contract Title *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Full-time Employment Contract"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editContractData.title}
+                  onChange={e => setEditContractData({ ...editContractData, title: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Start Date *</label>
+                <input
+                  type="date"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editContractData.startDate}
+                  onChange={e => setEditContractData({ ...editContractData, startDate: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">End Date (Optional)</label>
+                <input
+                  type="date"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editContractData.endDate}
+                  onChange={e => setEditContractData({ ...editContractData, endDate: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Contract Document (PDF / Image)</label>
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl transition border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 w-full">
+                    <Upload className="w-3.5 h-3.5" />
+                    {editContractUploading ? 'Uploading...' : 'Choose File'}
+                    <input type="file" accept="application/pdf,image/*" className="hidden" onChange={e => handleGeneralFileUpload(e, 'edit_contract')} disabled={editContractUploading} />
+                  </label>
+                </div>
+                {editContractData.url && <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Contract attached</p>}
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditContractModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEditContract}
+                  disabled={editContractUploading}
+                  className="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md disabled:opacity-50 cursor-pointer"
+                >
+                  Save Contract Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Disciplinary Case Modal */}
+      {editDiscModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setEditDiscModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 z-10 space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Edit Disciplinary Case</h3>
+              <button onClick={() => setEditDiscModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Occurrence Date *</label>
+                <input
+                  type="date"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editDiscData.date}
+                  onChange={e => setEditDiscData({ ...editDiscData, date: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Issue / Incident *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Policy violation"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editDiscData.issue}
+                  onChange={e => setEditDiscData({ ...editDiscData, issue: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Action Taken *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Formal Warning"
+                  className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editDiscData.actionTaken}
+                  onChange={e => setEditDiscData({ ...editDiscData, actionTaken: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Attachment Notice (PDF / Image)</label>
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl transition border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 w-full">
+                    <Upload className="w-3.5 h-3.5" />
+                    {editDiscUploading ? 'Uploading...' : 'Choose File'}
+                    <input type="file" accept="application/pdf,image/*" className="hidden" onChange={e => handleGeneralFileUpload(e, 'edit_disc')} disabled={editDiscUploading} />
+                  </label>
+                </div>
+                {editDiscData.url && <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Notice document attached</p>}
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditDiscModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEditDisc}
+                  disabled={editDiscUploading}
+                  className="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md disabled:opacity-50 cursor-pointer"
+                >
+                  Save Disciplinary Record
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Qualification Modal */}
       {editQualModalOpen && (
