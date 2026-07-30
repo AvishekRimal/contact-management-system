@@ -84,7 +84,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
-    type: 'qual' | 'skill' | 'exp' | 'ref' | 'disc' | 'contract' | 'resignation' | null;
+    type: 'qual' | 'skill' | 'exp' | 'ref' | 'disc' | 'contract' | 'resignation' | 'doc' | null;
     index: number | null;
     itemName?: string;
   }>({
@@ -349,6 +349,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleUploadSelectedDoc = async () => {
+    if (!hasPermission('add_documents')) {
+      toast.error('Permission Denied: You do not have permission to upload documents.');
+      return;
+    }
     if (!selectedDocFile) {
       toast.error('Please select a file to upload first');
       return;
@@ -407,6 +411,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   // --- Resignation Handling ---
   const handleAddResignation = async () => {
+    if (!hasPermission('add_resignation') && !hasPermission('manage_resignation')) {
+      toast.error('Permission Denied: Cannot record resignation.');
+      return;
+    }
     if ((employee?.officeActivities?.resignations?.length || 0) >= 1) {
       toast.error('Only one resignation record can be added.');
       return;
@@ -427,6 +435,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleOpenEditResignation = (idx: number, r: any) => {
+    if (!hasPermission('edit_resignation') && !hasPermission('manage_resignation')) {
+      toast.error('Permission Denied: Cannot edit resignation.');
+      return;
+    }
     setEditingResignationIdx(idx);
     setEditResignationData({
       date: r.date || new Date().toISOString().split('T')[0],
@@ -438,6 +450,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleSaveEditResignation = async () => {
+    if (!hasPermission('edit_resignation') && !hasPermission('manage_resignation')) {
+      toast.error('Permission Denied: Cannot edit resignation.');
+      return;
+    }
     if (editingResignationIdx === null) return;
     const val = resignationSchema.safeParse(editResignationData);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -456,6 +472,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   // --- Qualifications Handling ---
   const handleOpenEditQual = (idx: number, q: any) => {
+    if (!hasPermission('edit_qualification')) {
+      toast.error('Permission Denied: Cannot edit qualification.');
+      return;
+    }
     setEditingQualIdx(idx);
     setEditQualData({
       level: q.level || '',
@@ -467,6 +487,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleSaveEditQual = async () => {
+    if (!hasPermission('edit_qualification')) {
+      toast.error('Permission Denied: Cannot edit qualification.');
+      return;
+    }
     if (editingQualIdx === null) return;
     const val = qualificationSchema.safeParse(editQualData);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -483,6 +507,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     setEditingQualIdx(null);
   };
   const handleAddQual = async () => {
+    if (!hasPermission('add_qualification')) {
+      toast.error('Permission Denied: Cannot add qualification.');
+      return;
+    }
     const val = qualificationSchema.safeParse(newQual);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
     const qualifications = [...(employee?.qualifications || []), newQual];
@@ -492,6 +520,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   // --- Skills Handling ---
   const handleOpenEditSkill = (idx: number, s: any) => {
+    if (!hasPermission('edit_skill')) {
+      toast.error('Permission Denied: Cannot edit skill.');
+      return;
+    }
     setEditingSkillIdx(idx);
     setEditSkillData({
       name: s.name || '',
@@ -501,6 +533,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleSaveEditSkill = async () => {
+    if (!hasPermission('edit_skill')) {
+      toast.error('Permission Denied: Cannot edit skill.');
+      return;
+    }
     if (editingSkillIdx === null) return;
     const val = skillSchema.safeParse(editSkillData);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -515,6 +551,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleAddSkill = async () => {
+    if (!hasPermission('add_skill')) {
+      toast.error('Permission Denied: Cannot add skill.');
+      return;
+    }
     const val = skillSchema.safeParse(newSkill);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
     const skills = [...(employee?.skills || []), newSkill];
@@ -524,6 +564,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   // --- Experience Handling ---
   const handleOpenEditExp = (idx: number, ex: any) => {
+    if (!hasPermission('edit_experience')) {
+      toast.error('Permission Denied: Cannot edit experience.');
+      return;
+    }
     setEditingExpIdx(idx);
     setEditExpData({
       company: ex.company || '',
@@ -535,6 +579,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleSaveEditExp = async () => {
+    if (!hasPermission('edit_experience')) {
+      toast.error('Permission Denied: Cannot edit experience.');
+      return;
+    }
     if (editingExpIdx === null) return;
     const val = experienceSchema.safeParse(editExpData);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -549,6 +597,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleAddExp = async () => {
+    if (!hasPermission('add_experience')) {
+      toast.error('Permission Denied: Cannot add experience.');
+      return;
+    }
     const val = experienceSchema.safeParse(newExp);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
     const experience = [...(employee?.experience || []), newExp];
@@ -558,6 +610,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   // --- Reference Handling ---
   const handleOpenEditRef = (idx: number, r: any) => {
+    if (!hasPermission('edit_reference')) {
+      toast.error('Permission Denied: Cannot edit reference.');
+      return;
+    }
     setEditingRefIdx(idx);
     setEditRefData({
       name: r.name || '',
@@ -570,6 +626,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleSaveEditRef = async () => {
+    if (!hasPermission('edit_reference')) {
+      toast.error('Permission Denied: Cannot edit reference.');
+      return;
+    }
     if (editingRefIdx === null) return;
     const val = referenceSchema.safeParse(editRefData);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -584,6 +644,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleAddRef = async () => {
+    if (!hasPermission('add_reference')) {
+      toast.error('Permission Denied: Cannot add reference.');
+      return;
+    }
     const val = referenceSchema.safeParse(newRef);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
     const references = [...(employee?.references || []), newRef];
@@ -593,6 +657,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   // --- Contract Handling ---
   const handleOpenEditContract = (idx: number, c: any) => {
+    if (!hasPermission('edit_contracts')) {
+      toast.error('Permission Denied: Cannot edit contract.');
+      return;
+    }
     setEditingContractIdx(idx);
     setEditContractData({
       title: c.title || '',
@@ -604,6 +672,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleSaveEditContract = async () => {
+    if (!hasPermission('edit_contracts')) {
+      toast.error('Permission Denied: Cannot edit contract.');
+      return;
+    }
     if (editingContractIdx === null) return;
     const val = contractSchema.safeParse(editContractData);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -621,6 +693,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleAddContract = async () => {
+    if (!hasPermission('add_contracts')) {
+      toast.error('Permission Denied: Cannot add contract.');
+      return;
+    }
     const val = contractSchema.safeParse(newContract);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
     const contracts = [...(employee?.officeActivities?.contracts || []), newContract];
@@ -633,6 +709,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   // --- Disciplinary Handling ---
   const handleOpenEditDisc = (idx: number, d: any) => {
+    if (!hasPermission('edit_disciplinary')) {
+      toast.error('Permission Denied: Cannot edit disciplinary case.');
+      return;
+    }
     setEditingDiscIdx(idx);
     setEditDiscData({
       date: d.date || '',
@@ -645,6 +725,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleSaveEditDisc = async () => {
+    if (!hasPermission('edit_disciplinary')) {
+      toast.error('Permission Denied: Cannot edit disciplinary case.');
+      return;
+    }
     if (editingDiscIdx === null) return;
     const val = disciplinarySchema.safeParse(editDiscData);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
@@ -662,6 +746,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleAddDisc = async () => {
+    if (!hasPermission('add_disciplinary')) {
+      toast.error('Permission Denied: Cannot record disciplinary case.');
+      return;
+    }
     const val = disciplinarySchema.safeParse(newDisc);
     if (!val.success) { toast.error(val.error.issues[0].message); return; }
     const disciplinaryCases = [...(employee?.officeActivities?.disciplinaryCases || []), newDisc];
@@ -678,35 +766,70 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     if (idx === null) return;
 
     if (deleteModal.type === 'qual') {
+      if (!hasPermission('delete_qualification')) {
+        toast.error('Permission Denied: Cannot delete qualification.');
+        return;
+      }
       const qualifications = employee.qualifications.filter((_: any, i: number) => i !== idx);
       await updateEmployeeAPI({ ...employee, qualifications }, 'Qualification removed');
     } else if (deleteModal.type === 'skill') {
+      if (!hasPermission('delete_skill')) {
+        toast.error('Permission Denied: Cannot delete skill.');
+        return;
+      }
       const skills = employee.skills.filter((_: any, i: number) => i !== idx);
       await updateEmployeeAPI({ ...employee, skills }, 'Skill removed');
     } else if (deleteModal.type === 'exp') {
+      if (!hasPermission('delete_experience')) {
+        toast.error('Permission Denied: Cannot delete experience.');
+        return;
+      }
       const experience = employee.experience.filter((_: any, i: number) => i !== idx);
       await updateEmployeeAPI({ ...employee, experience }, 'Experience entry removed');
     } else if (deleteModal.type === 'ref') {
+      if (!hasPermission('delete_reference')) {
+        toast.error('Permission Denied: Cannot delete reference.');
+        return;
+      }
       const references = employee.references.filter((_: any, i: number) => i !== idx);
       await updateEmployeeAPI({ ...employee, references }, 'Reference removed');
     } else if (deleteModal.type === 'contract') {
+      if (!hasPermission('delete_contracts')) {
+        toast.error('Permission Denied: Cannot delete contract.');
+        return;
+      }
       const contracts = employee.officeActivities.contracts.filter((_: any, i: number) => i !== idx);
       await updateEmployeeAPI({
         ...employee,
         officeActivities: { ...(employee.officeActivities || {}), contracts }
       }, 'Contract deleted');
     } else if (deleteModal.type === 'disc') {
+      if (!hasPermission('delete_disciplinary')) {
+        toast.error('Permission Denied: Cannot delete disciplinary case.');
+        return;
+      }
       const disciplinaryCases = employee.officeActivities.disciplinaryCases.filter((_: any, i: number) => i !== idx);
       await updateEmployeeAPI({
         ...employee,
         officeActivities: { ...(employee.officeActivities || {}), disciplinaryCases }
       }, 'Disciplinary record deleted');
     } else if (deleteModal.type === 'resignation') {
+      if (!hasPermission('delete_resignation') && !hasPermission('manage_resignation')) {
+        toast.error('Permission Denied: Cannot delete resignation.');
+        return;
+      }
       const resignations = employee.officeActivities.resignations.filter((_: any, i: number) => i !== idx);
       await updateEmployeeAPI({
         ...employee,
         officeActivities: { ...(employee.officeActivities || {}), resignations }
       }, 'Resignation record deleted');
+    } else if (deleteModal.type === 'doc') {
+      if (!hasPermission('delete_documents')) {
+        toast.error('Permission Denied: Cannot delete document.');
+        return;
+      }
+      const documents = employee.documents.filter((_: any, i: number) => i !== idx);
+      await updateEmployeeAPI({ ...employee, documents }, 'Document deleted');
     }
   };
 
@@ -977,7 +1100,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           {/* Sidebar Menu Selector Buttons */}
           <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl overflow-hidden shadow-xl">
             <button
-              onClick={() => { setActiveMenu('profile'); setActiveTab('General Info'); }}
+              onClick={() => {
+                setActiveMenu('profile');
+                if (profileTabs.length > 0) setActiveTab(profileTabs[0]);
+              }}
               className={`w-full text-left px-5 py-4 text-xs font-semibold flex items-center gap-3 transition-colors ${
                 activeMenu === 'profile' ? 'bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 border-l-4 border-blue-500' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/40 hover:text-slate-900 dark:hover:text-white'
               }`}
@@ -985,7 +1111,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <Sparkles className="w-4 h-4" /> Employee Profile
             </button>
             <button
-              onClick={() => { setActiveMenu('activities'); setActiveTab('Contract'); }}
+              onClick={() => {
+                setActiveMenu('activities');
+                if (activityTabs.length > 0) setActiveTab(activityTabs[0]);
+              }}
               className={`w-full text-left px-5 py-4 text-xs font-semibold flex items-center gap-3 transition-colors ${
                 activeMenu === 'activities' ? 'bg-blue-50 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400 border-l-4 border-blue-500' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/40 hover:text-slate-900 dark:hover:text-white'
               }`}
@@ -1381,7 +1510,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Academic Qualifications</h4>
 
                 {/* HIDE ADD QUALIFICATION IF NO PERMISSION */}
-                {(hasPermission('add_qualification') || hasPermission('edit_employee')) && (
+                {hasPermission('add_qualification') && (
                   <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-4 space-y-4">
                     <h5 className="font-semibold text-slate-800 dark:text-slate-200">Add Academic Credential</h5>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -1443,7 +1572,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <th className="p-3">Institute</th>
                         <th className="p-3">Year</th>
                         <th className="p-3">Attachment</th>
-                        {(hasPermission('delete_qualification') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_qualification') || hasPermission('delete_qualification')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1460,14 +1589,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                                 </button>
                               ) : <span className="text-slate-400 dark:text-slate-500">No Attachment</span>}
                             </td>
-                            {(hasPermission('edit_qualification') || hasPermission('delete_qualification') || hasPermission('edit_employee')) && (
+                            {(hasPermission('edit_qualification') || hasPermission('delete_qualification')) && (
                               <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
-                                {(hasPermission('edit_qualification') || hasPermission('edit_employee')) && (
+                                {hasPermission('edit_qualification') && (
                                   <button onClick={() => handleOpenEditQual(i, q)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Qualification">
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
-                                {(hasPermission('delete_qualification') || hasPermission('edit_employee')) && (
+                                {hasPermission('delete_qualification') && (
                                   <button onClick={() => setDeleteModal({ isOpen: true, type: 'qual', index: i, itemName: q.level })} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Qualification">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -1490,7 +1619,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="space-y-6 text-xs">
                 <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Professional Skills</h4>
                 
-                {(hasPermission('add_skill') || hasPermission('edit_employee')) && (
+                {hasPermission('add_skill') && (
                   <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-4 space-y-4">
                     <h5 className="font-semibold text-slate-800 dark:text-slate-200">Add Skill Specification</h5>
                     <div className="grid grid-cols-2 gap-4">
@@ -1521,7 +1650,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                       <tr className="bg-slate-100 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-400 font-semibold uppercase">
                         <th className="p-3">Skill Name</th>
                         <th className="p-3">Proficiency</th>
-                        {(hasPermission('edit_skill') || hasPermission('delete_skill') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_skill') || hasPermission('delete_skill')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1534,14 +1663,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                                 {s?.proficiency}
                               </span>
                             </td>
-                            {(hasPermission('edit_skill') || hasPermission('delete_skill') || hasPermission('edit_employee')) && (
+                            {(hasPermission('edit_skill') || hasPermission('delete_skill')) && (
                               <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
-                                {(hasPermission('edit_skill') || hasPermission('edit_employee')) && (
+                                {hasPermission('edit_skill') && (
                                   <button onClick={() => handleOpenEditSkill(idx, s)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Skill">
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
-                                {(hasPermission('delete_skill') || hasPermission('edit_employee')) && (
+                                {hasPermission('delete_skill') && (
                                   <button onClick={() => setDeleteModal({ isOpen: true, type: 'skill', index: idx, itemName: s.name })} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Skill">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -1564,7 +1693,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="space-y-6 text-xs">
                 <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Job Experience</h4>
                 
-                {(hasPermission('add_experience') || hasPermission('edit_employee')) && (
+                {hasPermission('add_experience') && (
                   <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-4 space-y-4">
                     <h5 className="font-semibold text-slate-800 dark:text-slate-200">Add Experience Record</h5>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -1622,7 +1751,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <th className="p-3">Role</th>
                         <th className="p-3">Duration</th>
                         <th className="p-3">Attachment</th>
-                        {(hasPermission('edit_experience') || hasPermission('delete_experience') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_experience') || hasPermission('delete_experience')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1639,14 +1768,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                                 </button>
                               ) : <span className="text-slate-400 dark:text-slate-500">No Attachment</span>}
                             </td>
-                            {(hasPermission('edit_experience') || hasPermission('delete_experience') || hasPermission('edit_employee')) && (
+                            {(hasPermission('edit_experience') || hasPermission('delete_experience')) && (
                               <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
-                                {(hasPermission('edit_experience') || hasPermission('edit_employee')) && (
+                                {hasPermission('edit_experience') && (
                                   <button onClick={() => handleOpenEditExp(idx, ex)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Experience">
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
-                                {(hasPermission('delete_experience') || hasPermission('edit_employee')) && (
+                                {hasPermission('delete_experience') && (
                                   <button onClick={() => setDeleteModal({ isOpen: true, type: 'exp', index: idx, itemName: ex.company })} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Experience">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -1669,7 +1798,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="space-y-6 text-xs">
                 <h4 className="text-sm font-semibold text-slate-900 dark:text-white">References</h4>
 
-                {(hasPermission('add_reference') || hasPermission('edit_employee')) && (
+                {hasPermission('add_reference') && (
                   <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-4 space-y-4">
                     <h5 className="font-semibold text-slate-800 dark:text-slate-200">Add Professional Reference</h5>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1723,7 +1852,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <th className="p-3">Designation</th>
                         <th className="p-3">Company</th>
                         <th className="p-3">Contact</th>
-                        {(hasPermission('edit_reference') || hasPermission('delete_reference') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_reference') || hasPermission('delete_reference')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1734,14 +1863,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                             <td className="p-3 text-slate-700 dark:text-slate-300">{r?.designation || '-'}</td>
                             <td className="p-3 text-slate-700 dark:text-slate-300">{r?.company || '-'}</td>
                             <td className="p-3 text-slate-700 dark:text-slate-300">{r?.contact || r?.email || '-'}</td>
-                            {(hasPermission('edit_reference') || hasPermission('delete_reference') || hasPermission('edit_employee')) && (
+                            {(hasPermission('edit_reference') || hasPermission('delete_reference')) && (
                               <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
-                                {(hasPermission('edit_reference') || hasPermission('edit_employee')) && (
+                                {hasPermission('edit_reference') && (
                                   <button onClick={() => handleOpenEditRef(i, r)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Reference">
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
-                                {(hasPermission('delete_reference') || hasPermission('edit_employee')) && (
+                                {hasPermission('delete_reference') && (
                                   <button onClick={() => setDeleteModal({ isOpen: true, type: 'ref', index: i, itemName: r.name })} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Reference">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -1763,7 +1892,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="space-y-6 text-xs">
                 <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Document Upload & Media Management</h4>
 
-                {(hasPermission('add_documents') || hasPermission('edit_employee')) && (
+                {hasPermission('add_documents') && (
                   <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 space-y-4 shadow-sm">
                     <h5 className="font-semibold text-slate-800 dark:text-slate-200">Upload New Personnel Document</h5>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
@@ -1846,6 +1975,15 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                             >
                               <ExternalLink className="w-3 h-3" />
                             </a>
+                            {hasPermission('delete_documents') && (
+                              <button
+                                onClick={() => setDeleteModal({ isOpen: true, type: 'doc', index: i, itemName: doc?.name || 'Document' })}
+                                className="text-xs text-rose-600 dark:text-rose-400 font-semibold border border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 px-2.5 py-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-500/20 flex items-center gap-1 transition"
+                                title="Delete Document"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1879,7 +2017,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="space-y-6 text-xs">
                 <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Employment Contracts</h4>
                 
-                {(hasPermission('add_contracts') || hasPermission('edit_employee')) && (
+                {hasPermission('add_contracts') && (
                   <div className="border border-slate-200 dark:border-slate-700/60 rounded-xl p-4 bg-slate-50 dark:bg-slate-900/60 space-y-4">
                     <h5 className="font-semibold text-slate-800 dark:text-slate-200">Create New Contract Record</h5>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
@@ -1937,7 +2075,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <th className="p-3">Start Date</th>
                         <th className="p-3">End Date</th>
                         <th className="p-3">Attachment</th>
-                        {(hasPermission('edit_contracts') || hasPermission('delete_contracts') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_contracts') || hasPermission('delete_contracts')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -1954,14 +2092,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                                 </button>
                               ) : <span className="text-slate-400 dark:text-slate-500">No Attachment</span>}
                             </td>
-                            {(hasPermission('edit_contracts') || hasPermission('delete_contracts') || hasPermission('edit_employee')) && (
+                            {(hasPermission('edit_contracts') || hasPermission('delete_contracts')) && (
                               <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
-                                {(hasPermission('edit_contracts') || hasPermission('edit_employee')) && (
+                                {hasPermission('edit_contracts') && (
                                   <button onClick={() => handleOpenEditContract(idx, c)} className="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Contract">
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
-                                {(hasPermission('delete_contracts') || hasPermission('edit_employee')) && (
+                                {hasPermission('delete_contracts') && (
                                   <button onClick={() => setDeleteModal({ isOpen: true, type: 'contract', index: idx, itemName: c.title })} className="text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Contract">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -2105,7 +2243,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="space-y-6 text-xs">
                 <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Disciplinary Cases</h4>
 
-                {(hasPermission('add_disciplinary') || hasPermission('edit_employee')) && (
+                {hasPermission('add_disciplinary') && (
                   <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-4 space-y-4">
                     <h5 className="font-semibold text-slate-800 dark:text-slate-200">Record Disciplinary Case</h5>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
@@ -2161,7 +2299,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                         <th className="p-3">Case / Issue</th>
                         <th className="p-3">Action Taken</th>
                         <th className="p-3">Attachment</th>
-                        {(hasPermission('edit_disciplinary') || hasPermission('delete_disciplinary') || hasPermission('edit_employee')) && <th className="p-3 text-right">Actions</th>}
+                        {(hasPermission('edit_disciplinary') || hasPermission('delete_disciplinary')) && <th className="p-3 text-right">Actions</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
@@ -2178,14 +2316,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                                 </button>
                               ) : <span className="text-slate-400 dark:text-slate-500">No File</span>}
                             </td>
-                            {(hasPermission('edit_disciplinary') || hasPermission('delete_disciplinary') || hasPermission('edit_employee')) && (
+                            {(hasPermission('edit_disciplinary') || hasPermission('delete_disciplinary')) && (
                               <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
-                                {(hasPermission('edit_disciplinary') || hasPermission('edit_employee')) && (
+                                {hasPermission('edit_disciplinary') && (
                                   <button onClick={() => handleOpenEditDisc(idx, d)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition" title="Edit Disciplinary Case">
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
-                                {(hasPermission('delete_disciplinary') || hasPermission('edit_employee')) && (
+                                {hasPermission('delete_disciplinary') && (
                                   <button onClick={() => setDeleteModal({ isOpen: true, type: 'disc', index: idx, itemName: d.issue })} className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition" title="Delete Disciplinary Case">
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>

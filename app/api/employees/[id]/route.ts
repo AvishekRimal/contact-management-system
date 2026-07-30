@@ -29,7 +29,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const isAuthorized = await verifyAuth(req, 'edit_employee');
+    const isAuthorized = await verifyAuth(req);
     if (!isAuthorized) {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
