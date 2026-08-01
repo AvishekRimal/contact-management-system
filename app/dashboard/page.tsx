@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  PlusCircle, Search, Trash2, Phone, Mail, Briefcase, UserX, Eye, Sparkles, MapPin, ChevronRight, Edit2, LayoutGrid, List
+  PlusCircle, Search, Trash2, Phone, Mail, UserX, ChevronRight, Edit2, LayoutGrid, List, MapPin
 } from 'lucide-react';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 
@@ -22,7 +22,7 @@ export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
-  // Restore the user's preferred view mode
+  // Restore preferred view mode
   useEffect(() => {
     const saved = localStorage.getItem('dashboardViewMode');
     if (saved === 'card' || saved === 'list') setViewMode(saved);
@@ -37,7 +37,7 @@ export default function Dashboard() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedEmpToDelete, setSelectedEmpToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  // Fetch fresh user and permission details from /api/auth/me
+  // Fetch current user details
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -58,7 +58,7 @@ export default function Dashboard() {
     return () => clearTimeout(delayTimer);
   }, [searchInput]);
 
-  // Fetch 20 employees per page
+  // Fetch employees
   const fetchEmployees = async () => {
     setLoading(true);
     try {
@@ -98,26 +98,54 @@ export default function Dashboard() {
     setDeleteModalOpen(true);
   };
 
-  // Shared derived fields used by both the card and list layouts
+  // Calculate age from birthdate
+  const calculateAge = (birthDateStr: string) => {
+    if (!birthDateStr) return null;
+    const birthDate = new Date(birthDateStr);
+    if (isNaN(birthDate.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Helper metadata processing
   const getEmployeeMeta = (emp: any) => {
-    const emailsList: string[] = emp.contactInfo?.emails?.length
+    const rawEmails: string[] = emp.contactInfo?.emails?.length
       ? emp.contactInfo.emails
       : (emp.contactInfo?.email ? [emp.contactInfo.email] : []);
-    const mobilesList: string[] = emp.contactInfo?.mobiles?.length
+    
+    const rawMobiles: string[] = emp.contactInfo?.mobiles?.length
       ? emp.contactInfo.mobiles
       : (emp.contactInfo?.mobile ? [emp.contactInfo.mobile] : []);
+
+    const emailsList = rawEmails.filter(Boolean);
+    const mobilesList = rawMobiles.filter(Boolean);
+
+    const visibleEmails = emailsList.slice(0, 2);
+    const extraEmailsCount = emailsList.length - visibleEmails.length;
+
+    const visibleMobiles = mobilesList.slice(0, 2);
+    const extraMobilesCount = mobilesList.length - visibleMobiles.length;
+
     const hasResignation = emp.officeActivities?.resignations?.length > 0;
     const isActive = emp.officeInfo?.status === 'Active' && !hasResignation;
 
+    const location = emp.contactInfo?.temporaryAddress || emp.contactInfo?.permanentAddress || '';
+    const age = calculateAge(emp.personalInfo?.birthDate);
+
     return {
-      emailsList,
-      mobilesList,
+      visibleEmails,
+      extraEmailsCount,
+      visibleMobiles,
+      extraMobilesCount,
       hasResignation,
       isActive,
-      primaryEmail: emailsList[0],
-      extraEmails: emailsList.length - 1,
-      primaryMobile: mobilesList[0],
-      extraMobiles: mobilesList.length - 1,
+      location,
+      age,
       avatarUrl: emp.documents?.find((d: any) => d.name === 'Profile Picture')?.url
         || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80',
     };
@@ -129,9 +157,7 @@ export default function Dashboard() {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/employees/${selectedEmpToDelete.id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (!res.ok) {
@@ -157,7 +183,7 @@ export default function Dashboard() {
               {totalCount} Total
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Manage personnel profiles, contracts, qualifications, and office records (20 cards per page).</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Manage personnel profiles, contracts, qualifications, and office records.</p>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 w-full md:w-auto">
@@ -192,11 +218,8 @@ export default function Dashboard() {
                 onClick={() => updateViewMode('card')}
                 title="Card View"
                 aria-label="Card view"
-                aria-pressed={viewMode === 'card'}
                 className={`p-1.5 rounded-lg transition ${
-                  viewMode === 'card'
-                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                  viewMode === 'card' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'
                 }`}
               >
                 <LayoutGrid className="h-4 w-4" />
@@ -205,24 +228,20 @@ export default function Dashboard() {
                 onClick={() => updateViewMode('list')}
                 title="List View"
                 aria-label="List view"
-                aria-pressed={viewMode === 'list'}
                 className={`p-1.5 rounded-lg transition ${
-                  viewMode === 'list'
-                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                  viewMode === 'list' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'
                 }`}
               >
                 <List className="h-4 w-4" />
               </button>
             </div>
 
-            {/* HIDE ADD BUTTON COMPLETELY IF NO PERMISSION */}
             {hasPermission('add_employee') && (
               <Link
                 href="/dashboard/employees/create"
                 className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs px-4 py-2 rounded-xl font-semibold shadow-lg hover:shadow-blue-500/20 transition duration-150 whitespace-nowrap flex-1 sm:flex-none"
               >
-                <PlusCircle className="h-4 w-4" /> <span className="sm:inline">Add Personnel</span>
+                <PlusCircle className="h-4 w-4" /> <span>Add Personnel</span>
               </Link>
             )}
           </div>
@@ -248,7 +267,7 @@ export default function Dashboard() {
           /* Compact List View */
           <div className="flex flex-col gap-2">
             {employees.map((emp: any) => {
-              const { emailsList, mobilesList, hasResignation, isActive, primaryEmail, extraEmails, primaryMobile, extraMobiles, avatarUrl } = getEmployeeMeta(emp);
+              const { visibleEmails, visibleMobiles, hasResignation, isActive, avatarUrl, location, age } = getEmployeeMeta(emp);
 
               return (
                 <Link
@@ -258,12 +277,10 @@ export default function Dashboard() {
                     hasResignation ? 'opacity-80 bg-slate-50/50 dark:bg-slate-900/60' : ''
                   }`}
                 >
-                  {/* Status Accent Bar */}
                   <div className={`absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b ${
                     hasResignation ? 'from-rose-600 to-amber-600' : isActive ? 'from-emerald-500 to-teal-500' : 'from-amber-500 to-rose-500'
                   }`} />
 
-                  {/* Avatar + Name + Dept */}
                   <div className="flex items-center gap-3 min-w-0 sm:w-56 shrink-0">
                     <div className="relative shrink-0">
                       <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
@@ -277,87 +294,48 @@ export default function Dashboard() {
                       <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-sm">
                         {emp.fullName || 'No Name Registered'}
                       </h3>
-                      {hasResignation ? (
-                        <span className="inline-block text-[10px] font-bold text-rose-600 dark:text-rose-400 truncate max-w-full">
-                          Resigned ({emp.officeInfo?.department || 'Dept'})
-                        </span>
-                      ) : (
-                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">
-                          {emp.officeInfo?.department || 'General'}
-                        </p>
-                      )}
+                      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+                        {emp.officeInfo?.department || 'General'} {age !== null ? `• ${age} yrs` : ''}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Contact Info */}
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[11px] text-slate-600 dark:text-slate-300 min-w-0 flex-1 pl-[52px] sm:pl-0">
-                    <div className="flex items-center gap-1.5 min-w-0 max-w-full sm:max-w-[220px]">
-                      <Mail className="h-3.5 w-3.5 shrink-0 text-blue-500 dark:text-blue-400" />
-                      {primaryEmail ? (
-                        <span className="truncate" title={primaryEmail}>{primaryEmail}</span>
-                      ) : (
-                        <span className="italic text-slate-400 dark:text-slate-500">No Email</span>
-                      )}
-                      {extraEmails > 0 && (
-                        <span
-                          className="shrink-0 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 px-1.5 py-0.5 rounded-md"
-                          title={`${extraEmails} more email${extraEmails > 1 ? 's' : ''}: ${emailsList.slice(1).join(', ')}`}
-                        >
-                          +{extraEmails}
-                        </span>
-                      )}
+                    <div className="flex items-center gap-1.5 min-w-0 max-w-full sm:max-w-[200px]">
+                      <Mail className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                      <span className="truncate">{visibleEmails[0] || 'No Email'}</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 min-w-0 max-w-full sm:max-w-[180px]">
-                      <Phone className="h-3.5 w-3.5 shrink-0 text-emerald-500 dark:text-emerald-400" />
-                      {primaryMobile ? (
-                        <span className="truncate" title={primaryMobile}>{primaryMobile}</span>
-                      ) : (
-                        <span className="italic text-slate-400 dark:text-slate-500">No Mobile</span>
-                      )}
-                      {extraMobiles > 0 && (
-                        <span
-                          className="shrink-0 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-1.5 py-0.5 rounded-md"
-                          title={`${extraMobiles} more number${extraMobiles > 1 ? 's' : ''}: ${mobilesList.slice(1).join(', ')}`}
-                        >
-                          +{extraMobiles}
-                        </span>
-                      )}
+                    <div className="flex items-center gap-1.5 min-w-0 max-w-full sm:max-w-[160px]">
+                      <Phone className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                      <span className="truncate">{visibleMobiles[0] || 'No Mobile'}</span>
                     </div>
 
-                    {emp.personalInfo?.bloodGroup && (
-                      <span className="bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0">
-                        {emp.personalInfo.bloodGroup}
-                      </span>
+                    {location && (
+                      <div className="flex items-center gap-1 min-w-0 max-w-[180px] text-slate-500 dark:text-slate-400">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-rose-500" />
+                        <span className="truncate">{location}</span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Actions + Chevron */}
                   <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto pl-[52px] sm:pl-0">
                     {hasPermission('edit_employee') && (
                       <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          router.push(`/dashboard/employees/${emp._id}?edit=true`);
-                        }}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/employees/${emp._id}?edit=true`); }}
                         className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition"
-                        title="Edit Personnel Profile & Add Contacts"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                     )}
-
                     {hasPermission('delete_employee') && (
                       <button
                         onClick={(e) => openDeleteModal(e, emp._id, emp.fullName || 'Employee Record')}
                         className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition"
-                        title="Delete Personnel Record"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
-
                     <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-transform ml-1" />
                   </div>
                 </Link>
@@ -365,132 +343,136 @@ export default function Dashboard() {
             })}
           </div>
           ) : (
-          /* Unique Sleek Card Grid (20 Cards Max per Page) */
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+          /* Premium Floating Avatar Card Grid */
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pt-10">
             {employees.map((emp: any) => {
-              const { emailsList, mobilesList, hasResignation, isActive, primaryEmail, extraEmails, primaryMobile, extraMobiles, avatarUrl } = getEmployeeMeta(emp);
+              const { visibleEmails, extraEmailsCount, visibleMobiles, extraMobilesCount, hasResignation, isActive, avatarUrl, location, age } = getEmployeeMeta(emp);
 
               return (
                 <Link
                   key={emp._id}
                   href={`/dashboard/employees/${emp._id}`}
-                  className={`group relative bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 hover:border-blue-500/50 rounded-2xl p-4 sm:p-5 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden ${
+                  className={`group relative bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/70 hover:border-blue-500/50 rounded-2xl p-4 pt-12 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-visible backdrop-blur-sm ${
                     hasResignation ? 'opacity-80 bg-slate-50/50 dark:bg-slate-900/60' : ''
                   }`}
                 >
-                  {/* Glowing Top Accent Line */}
-                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
-                    hasResignation ? 'from-rose-600 to-amber-600' : isActive ? 'from-emerald-500 to-teal-500' : 'from-amber-500 to-rose-500'
-                  }`} />
-
-                  {/* Top Right Action Controls (Edit & Delete) — always visible on touch devices, reveal-on-hover on desktop */}
-                  <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 flex items-center gap-1 z-10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity">
-                    {hasPermission('edit_employee') && (
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          router.push(`/dashboard/employees/${emp._id}?edit=true`);
-                        }}
-                        className="p-2 sm:p-1.5 text-slate-400 bg-white/80 dark:bg-slate-900/60 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition backdrop-blur-sm"
-                        title="Edit Personnel Profile & Add Contacts"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                    )}
-
-                    {hasPermission('delete_employee') && (
-                      <button
-                        onClick={(e) => openDeleteModal(e, emp._id, emp.fullName || 'Employee Record')}
-                        className="p-2 sm:p-1.5 text-slate-400 bg-white/80 dark:bg-slate-900/60 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition backdrop-blur-sm"
-                        title="Delete Personnel Record"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col items-center pt-2 text-center space-y-3">
-                    {/* Avatar with Status Pulse */}
+                  {/* Floating Overlapping Avatar */}
+                  <div className="absolute -top-9 left-1/2 -translate-x-1/2">
                     <div className="relative">
-                      <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-slate-100 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 overflow-hidden shadow-md group-hover:scale-105 transition-transform duration-300">
+                      <div className="w-18 h-18 w-20 h-20 rounded-full bg-white dark:bg-slate-900 p-1 shadow-lg ring-4 ring-white dark:ring-slate-800 group-hover:scale-105 transition-transform duration-300">
                         <img
                           src={avatarUrl}
                           alt="profile"
-                          className="object-cover w-full h-full"
+                          className="object-cover w-full h-full rounded-full"
                         />
                       </div>
-                      <span className={`absolute bottom-0 right-0 block h-3.5 w-3.5 rounded-full ring-2 ring-white dark:ring-slate-800 ${
+                      <span className={`absolute bottom-0 right-1 block h-4 w-4 rounded-full ring-2 ring-white dark:ring-slate-800 ${
                         hasResignation ? 'bg-rose-500' : isActive ? 'bg-emerald-500' : 'bg-amber-500'
                       }`} />
                     </div>
+                  </div>
 
-                    <div className="w-full space-y-1">
-                      <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-sm px-1">
-                        {emp.fullName || 'No Name Registered'}
-                      </h3>
-                      {hasResignation ? (
-                        <span className="inline-block text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 px-2 py-0.5 rounded-md truncate max-w-full">
-                          Resigned ({emp.officeInfo?.department || 'Dept'})
+                  {/* Top Right Floating Actions */}
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1 z-10 opacity-15 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    {hasPermission('edit_employee') && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/employees/${emp._id}?edit=true`); }}
+                        className="p-1.5 text-slate-400 bg-white/90 dark:bg-slate-900/80 hover:text-blue-500 rounded-lg shadow-sm transition"
+                        title="Edit Profile"
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {hasPermission('delete_employee') && (
+                      <button
+                        onClick={(e) => openDeleteModal(e, emp._id, emp.fullName || 'Employee Record')}
+                        className="p-1.5 text-slate-400 bg-white/90 dark:bg-slate-900/80 hover:text-rose-500 rounded-lg shadow-sm transition"
+                        title="Delete Record"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Name & Title Header */}
+                  <div className="text-center pt-1 space-y-1">
+                    <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate text-sm">
+                      {emp.fullName || 'No Name Registered'}
+                    </h3>
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                      {emp.officeInfo?.department || 'General Dept'}
+                    </p>
+                    <div className="flex items-center justify-center gap-1.5 pt-0.5 flex-wrap">
+                      {emp.personalInfo?.bloodGroup && (
+                        <span className="bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 text-[9px] font-bold px-1.5 py-0.2 rounded">
+                          {emp.personalInfo.bloodGroup}
                         </span>
-                      ) : (
-                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">
-                          {emp.officeInfo?.department || 'General'}
-                        </p>
+                      )}
+                      {age !== null && (
+                        <span className="bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 text-[9px] font-bold px-1.5 py-0.2 rounded">
+                          {age} yrs old
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Contact Info Footer — always exactly 2 rows so card height stays uniform regardless of how many emails/numbers an employee has */}
+                  {/* Contact Info & Location Body */}
                   <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/60 text-[11px] space-y-2">
-                    {/* Primary Email + overflow count */}
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                      <Mail className="h-3.5 w-3.5 shrink-0 text-blue-500 dark:text-blue-400" />
-                      {primaryEmail ? (
-                        <span className="truncate" title={primaryEmail}>{primaryEmail}</span>
-                      ) : (
-                        <span className="truncate italic text-slate-400 dark:text-slate-500">No Email</span>
-                      )}
-                      {extraEmails > 0 && (
-                        <span
-                          className="ml-auto shrink-0 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 px-1.5 py-0.5 rounded-md"
-                          title={`${extraEmails} more email${extraEmails > 1 ? 's' : ''}: ${emailsList.slice(1).join(', ')}`}
-                        >
-                          +{extraEmails}
-                        </span>
-                      )}
+                    {/* Location Info */}
+                    <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-rose-500" />
+                      <span className="truncate" title={location || 'No location registered'}>
+                        {location || <span className="italic text-slate-400">No Location Info</span>}
+                      </span>
                     </div>
 
-                    {/* Primary Mobile + overflow count + Blood Group */}
-                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                      <Phone className="h-3.5 w-3.5 shrink-0 text-emerald-500 dark:text-emerald-400" />
-                      {primaryMobile ? (
-                        <span className="truncate" title={primaryMobile}>{primaryMobile}</span>
-                      ) : (
-                        <span className="truncate italic text-slate-400 dark:text-slate-500">No Mobile</span>
-                      )}
-                      <div className="ml-auto flex items-center gap-1 shrink-0">
-                        {extraMobiles > 0 && (
-                          <span
-                            className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-1.5 py-0.5 rounded-md"
-                            title={`${extraMobiles} more number${extraMobiles > 1 ? 's' : ''}: ${mobilesList.slice(1).join(', ')}`}
-                          >
-                            +{extraMobiles}
-                          </span>
+                    {/* Email Info (Max 2) */}
+                    <div className="flex items-start gap-1.5 text-slate-600 dark:text-slate-300">
+                      <Mail className="h-3.5 w-3.5 shrink-0 text-blue-500 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        {visibleEmails.length > 0 ? (
+                          visibleEmails.map((email: string, idx: number) => (
+                            <div key={idx} className="truncate text-[11px]" title={email}>
+                              {email}
+                            </div>
+                          ))
+                        ) : (
+                          <span className="italic text-slate-400">No Email Listed</span>
                         )}
-                        {emp.personalInfo?.bloodGroup && (
-                          <span className="bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                            {emp.personalInfo.bloodGroup}
+                        {extraEmailsCount > 0 && (
+                          <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-1 rounded inline-block mt-0.5">
+                            +{extraEmailsCount} more email{extraEmailsCount > 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* View Details Action Indicator */}
-                    <div className="pt-2 flex items-center justify-between text-[11px] font-semibold text-blue-600 dark:text-blue-400 group-hover:text-blue-500">
-                      <span>View Profile</span>
-                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    {/* Mobile Info (Max 2) */}
+                    <div className="flex items-start gap-1.5 text-slate-600 dark:text-slate-300">
+                      <Phone className="h-3.5 w-3.5 shrink-0 text-emerald-500 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        {visibleMobiles.length > 0 ? (
+                          visibleMobiles.map((mob: string, idx: number) => (
+                            <div key={idx} className="truncate text-[11px]" title={mob}>
+                              {mob}
+                            </div>
+                          ))
+                        ) : (
+                          <span className="italic text-slate-400">No Mobile Listed</span>
+                        )}
+                        {extraMobilesCount > 0 && (
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1 rounded inline-block mt-0.5">
+                            +{extraMobilesCount} more number{extraMobilesCount > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Card Footer Link */}
+                  <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-[11px] font-semibold text-blue-600 dark:text-blue-400 group-hover:text-blue-500">
+                    <span>View Profile</span>
+                    <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Link>
               );
@@ -500,7 +482,7 @@ export default function Dashboard() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 mt-8 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-3 rounded-2xl max-w-md mx-auto shadow-sm">
+            <div className="flex justify-center items-center gap-4 mt-12 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-3 rounded-2xl max-w-md mx-auto shadow-sm">
               <button
                 disabled={page === 1}
                 onClick={() => setPage(p => Math.max(p - 1, 1))}
