@@ -8,6 +8,7 @@ import {
   ChevronLeft, PanelLeftClose, PanelLeftOpen, ShieldCheck, UserCheck, ShieldAlert,
   Sun, Moon, FileText
 } from 'lucide-react';
+import Image from 'next/image';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -151,13 +152,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Sidebar Brand Header */}
           <div className="h-16 border-b border-slate-200 dark:border-slate-800/80 px-4 flex items-center justify-between overflow-hidden">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
-                RC
-              </div>
+              {!sidebarExpanded && <span className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">
+              <Image src="/smlogo.ico" alt="Company Logo" width={100} height={32} className="mx-auto" />
+              </span>
+              }
               {sidebarExpanded && (
                 <div className="min-w-0 transition-opacity duration-200">
-                  <span className="text-sm font-bold text-slate-900 dark:text-white tracking-tight block truncate">Personnel Hub</span>
-                  <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 block tracking-widest uppercase">Admin System</span>
+                  {/* <span className="text-sm font-bold text-slate-900 dark:text-white tracking-tight block truncate">Personnel Hub</span>
+                  <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 block tracking-widest uppercase">Admin System</span> */}
+                  <Image src="/logo.svg" alt="Company Logo" width={140} height={80} className="mx-auto" />
                 </div>
               )}
             </div>

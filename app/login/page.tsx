@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { loginSchema } from '@/lib/validations';
 import { Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -58,12 +59,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-50 via-slate-100 to-slate-200 dark:from-slate-800 dark:via-slate-900 dark:to-slate-950 p-4 transition-colors">
       <div className="w-full max-w-md bg-white dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200 dark:border-slate-700/60 rounded-3xl p-8 shadow-2xl space-y-6 relative overflow-hidden">
         {/* Top glowing gradient line */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-600/10 border border-blue-200 dark:border-blue-500/30 rounded-2xl flex items-center justify-center mx-auto text-blue-600 dark:text-blue-400">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
+          <Image src="/logo.svg" alt="Company Logo" width={150} height={100} className="mx-auto" />
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Personnel Directory</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">Sign in to access your administrative workspace</p>
         </div>
