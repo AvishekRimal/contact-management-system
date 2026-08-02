@@ -63,7 +63,8 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const url = `/api/employees?page=${page}&limit=20&search=${searchDebounced}&status=${statusFilter}`;
-      const res = await fetch(url);
+      const token = localStorage.getItem('token');
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setEmployees(data.employees || []);
       setTotalPages(data.meta?.totalPages || 1);

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Mail, Phone, Plus, Sparkles, Trash2, Upload } from 'lucide-react';
 import { uploadFile } from '@/lib/uploadFile';
+import RoleVisibilitySelector from '@/components/employees/RoleVisibilitySelector';
 
 interface GeneralInfoTabProps {
   employee: any;
@@ -23,6 +24,10 @@ interface GeneralInfoTabProps {
   removeMobileField: (index: number) => void;
   handleSaveProfile: () => Promise<void>;
   populateEmailsAndMobiles: (data: any) => void;
+  roles: Array<{ _id: string; name: string }>;
+  rolesLoading: boolean;
+  selectedRoleIds: string[];
+  setSelectedRoleIds: (ids: string[]) => void;
 }
 
 export default function GeneralInfoTab({
@@ -43,6 +48,10 @@ export default function GeneralInfoTab({
   removeMobileField,
   handleSaveProfile,
   populateEmailsAndMobiles,
+  roles,
+  rolesLoading,
+  selectedRoleIds,
+  setSelectedRoleIds,
 }: GeneralInfoTabProps) {
   const [avatarUploading, setAvatarUploading] = useState(false);
 
@@ -113,28 +122,39 @@ export default function GeneralInfoTab({
           </div>
         </div>
 
-        {/* Core Identification */}
-        <div>
-          <h4 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide border-b border-slate-200 dark:border-slate-700/60 pb-2 mb-4">Core Identification</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Full Name *</label>
-              <input
-                type="text"
-                className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-white w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={editForm?.fullName || ''}
-                onChange={(e) => handleRootFieldChange('fullName', e.target.value)}
-              />
+        {/* Core Identification + Visibility & Access split layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-8">
+            <h4 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide border-b border-slate-200 dark:border-slate-700/60 pb-2 mb-4">Core Identification</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-white w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editForm?.fullName || ''}
+                  onChange={(e) => handleRootFieldChange('fullName', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Department *</label>
+                <input
+                  type="text"
+                  className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-white w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editForm?.officeInfo?.department || ''}
+                  onChange={(e) => handleNestedFieldChange('officeInfo', 'department', e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Department *</label>
-              <input
-                type="text"
-                className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2.5 rounded-xl text-slate-900 dark:text-white w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={editForm?.officeInfo?.department || ''}
-                onChange={(e) => handleNestedFieldChange('officeInfo', 'department', e.target.value)}
-              />
-            </div>
+          </div>
+
+          <div className="lg:col-span-4">
+            <RoleVisibilitySelector
+              roles={roles}
+              selectedRoleIds={selectedRoleIds}
+              onChange={setSelectedRoleIds}
+              loading={rolesLoading}
+            />
           </div>
         </div>
 

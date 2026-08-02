@@ -25,6 +25,9 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const [editForm, setEditForm] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [roles, setRoles] = useState<Array<{ _id: string; name: string }>>([]);
+  const [rolesLoading, setRolesLoading] = useState(true);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [activeMenu, setActiveMenu] = useState<'profile' | 'activities'>('profile');
   const [activeTab, setActiveTab] = useState<string>('General Info');
   const [loading, setLoading] = useState(true);
@@ -84,12 +87,17 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   const fetchEmployee = async () => {
     try {
-      const res = await fetch(`/api/employees/${id}`);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/employees/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (!res.ok) throw new Error('Failed to retrieve record');
       const data = await res.json();
       setEmployee(data);
       setEditForm(JSON.parse(JSON.stringify(data)));
       populateEmailsAndMobiles(data);
+      const roleIds = (data.visibleToRoles || []).map((r: any) => (typeof r === 'string' ? r : r._id));
+      setSelectedRoleIds(roleIds);
     } catch (e: any) {
       console.error(e);
       toast.error('Could not load personnel profile');
@@ -106,6 +114,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         .then(r => r.json())
         .then(d => { if (d.user) setCurrentUser(d.user); })
         .catch(() => {});
+
+      fetch('/api/roles', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(d => { if (Array.isArray(d)) setRoles(d); })
+        .catch(() => {})
+        .finally(() => setRolesLoading(false));
+    } else {
+      setRolesLoading(false);
     }
     if (id && id !== 'create') {
       fetchEmployee();
@@ -158,7 +174,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         mobile: validMobiles[0] || '',
         emails: validEmails,
         mobiles: validMobiles,
-      }
+      },
+      visibleToRoles: selectedRoleIds,
     };
 
     await updateEmployeeAPI(payload, 'Personnel profile modifications saved successfully');
@@ -631,6 +648,10 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 removeMobileField={removeMobileField}
                 handleSaveProfile={handleSaveProfile}
                 populateEmailsAndMobiles={populateEmailsAndMobiles}
+                roles={roles}
+                rolesLoading={rolesLoading}
+                selectedRoleIds={selectedRoleIds}
+                setSelectedRoleIds={setSelectedRoleIds}
               />
             )}
 

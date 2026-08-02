@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Save, Upload, ShieldAlert, Sparkles, Plus, Trash2, Mail, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { employeeSchema } from '@/lib/validations';
+import RoleVisibilitySelector from '@/components/employees/RoleVisibilitySelector';
 
 export default function CreateEmployeePage() {
   const router = useRouter();
@@ -13,6 +14,9 @@ export default function CreateEmployeePage() {
   const [uploading, setUploading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [roles, setRoles] = useState<Array<{ _id: string; name: string }>>([]);
+  const [rolesLoading, setRolesLoading] = useState(true);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
 
   // Multiple Emails & Mobiles states
   const [emailsList, setEmailsList] = useState<string[]>(['']);
@@ -60,8 +64,26 @@ export default function CreateEmployeePage() {
         .then(r => r.json())
         .then(d => { if (d.user) setCurrentUser(d.user); })
         .catch(() => {});
+
+      fetch('/api/roles', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(d => { if (Array.isArray(d)) setRoles(d); })
+        .catch(() => {})
+        .finally(() => setRolesLoading(false));
+    } else {
+      setRolesLoading(false);
     }
   }, []);
+
+  // Pre-select the logged-in user's own role once both currentUser and roles are loaded.
+  // Admins aren't a selectable option (they already see everything internally), so there's
+  // nothing to pre-select for an admin creator — it defaults to unrestricted (visible to all).
+  useEffect(() => {
+    const roleName = (currentUser?.role?.name || '').toLowerCase();
+    if (currentUser?.role?._id && roleName !== 'admin' && roles.length > 0 && selectedRoleIds.length === 0) {
+      setSelectedRoleIds([currentUser.role._id]);
+    }
+  }, [currentUser, roles]);
 
   const hasPermission = (permission: string) => {
     if (!currentUser) return false;
@@ -157,7 +179,8 @@ export default function CreateEmployeePage() {
         mobile: primaryMobile,
         emails: validEmails,
         mobiles: validMobiles,
-      }
+      },
+      visibleToRoles: selectedRoleIds,
     };
 
     // Zod Schema Validation
@@ -230,8 +253,9 @@ export default function CreateEmployeePage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         
-        {/* Core required identification card */}
-        <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5">
+        {/* Core Identification + Visibility & Access split layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-8 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5">
           <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700/60 pb-3">
             <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Core Identification Profile</h2>
@@ -352,6 +376,16 @@ export default function CreateEmployeePage() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="lg:col-span-4">
+          <RoleVisibilitySelector
+            roles={roles}
+            selectedRoleIds={selectedRoleIds}
+            onChange={setSelectedRoleIds}
+            loading={rolesLoading}
+          />
+        </div>
         </div>
 
         {/* Address and Financial Card */}

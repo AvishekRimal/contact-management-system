@@ -100,6 +100,7 @@ export interface IEmployee extends Document {
       url?: string;
     }>;
   };
+  visibleToRoles: mongoose.Types.ObjectId[];
 }
 
 const EmployeeSchema = new Schema<IEmployee>({
@@ -193,7 +194,8 @@ const EmployeeSchema = new Schema<IEmployee>({
       severity: { type: String, default: 'Low' },
       url: { type: String, default: '' }
     }]
-  }
+  },
+  visibleToRoles: { type: [Schema.Types.ObjectId], ref: 'Role', default: [] }
 }, { timestamps: true });
 
 const Employee: Model<IEmployee> = mongoose.models.Employee || mongoose.model<IEmployee>('Employee', EmployeeSchema);

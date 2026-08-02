@@ -58,7 +58,10 @@ export default function ResignationsManagementPage() {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch('/api/employees?limit=1000');
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/employees?limit=1000', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const data = await res.json();
       if (res.ok) {
         setEmployees(data.employees || []);

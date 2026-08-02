@@ -37,6 +37,7 @@ export const employeeSchema = z.object({
     relation: z.string().optional().default(''),
     phone: z.string().optional().default(''),
   }),
+  visibleToRoles: z.array(z.string()).optional().default([]),
 });
 
 export const userCreateSchema = z.object({

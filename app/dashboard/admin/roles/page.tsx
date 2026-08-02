@@ -20,52 +20,21 @@ export default function RolesManagementPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  // Complete list of granular permission keys
-  const availablePermissions = [
-    'add_employee',
-    'edit_employee',
-    'delete_employee',
-    'view_qualification',
-    'add_qualification',
-    'edit_qualification',
-    'delete_qualification',
-    'view_skill',
-    'add_skill',
-    'edit_skill',
-    'delete_skill',
-    'view_experience',
-    'add_experience',
-    'edit_experience',
-    'delete_experience',
-    'view_reference',
-    'add_reference',
-    'edit_reference',
-    'delete_reference',
-    'view_documents',
-    'add_documents',
-    'delete_documents',
-    'view_contracts',
-    'add_contracts',
-    'edit_contracts',
-    'delete_contracts',
-    'view_resignation',
-    'add_resignation',
-    'edit_resignation',
-    'delete_resignation',
-    'manage_resignation',
-    'view_disciplinary',
-    'add_disciplinary',
-    'edit_disciplinary',
-    'delete_disciplinary',
-    'view_users',
-    'add_users',
-    'edit_users',
-    'delete_users',
-    'view_roles',
-    'add_roles',
-    'edit_roles',
-    'delete_roles'
+  // Granular permission keys, grouped by feature area so the checklist is easier to scan
+  const permissionGroups: { label: string; permissions: string[] }[] = [
+    { label: 'Personnel Records', permissions: ['add_employee', 'edit_employee', 'delete_employee'] },
+    { label: 'Qualifications', permissions: ['view_qualification', 'add_qualification', 'edit_qualification', 'delete_qualification'] },
+    { label: 'Skills', permissions: ['view_skill', 'add_skill', 'edit_skill', 'delete_skill'] },
+    { label: 'Experience', permissions: ['view_experience', 'add_experience', 'edit_experience', 'delete_experience'] },
+    { label: 'References', permissions: ['view_reference', 'add_reference', 'edit_reference', 'delete_reference'] },
+    { label: 'Documents', permissions: ['view_documents', 'add_documents', 'delete_documents'] },
+    { label: 'Contracts', permissions: ['view_contracts', 'add_contracts', 'edit_contracts', 'delete_contracts'] },
+    { label: 'Resignations', permissions: ['view_resignation', 'add_resignation', 'edit_resignation', 'delete_resignation', 'manage_resignation'] },
+    { label: 'Disciplinary Cases', permissions: ['view_disciplinary', 'add_disciplinary', 'edit_disciplinary', 'delete_disciplinary'] },
+    { label: 'User Management', permissions: ['view_users', 'add_users', 'edit_users', 'delete_users'] },
+    { label: 'Role Security', permissions: ['view_roles', 'add_roles', 'edit_roles', 'delete_roles'] },
   ];
+  const availablePermissions = permissionGroups.flatMap(g => g.permissions);
 
   const fetchRoles = async () => {
     try {
@@ -282,17 +251,24 @@ export default function RolesManagementPage() {
                     {form.permissions.length === availablePermissions.length ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
-                <div className="grid grid-cols-1 gap-1.5 max-h-[300px] overflow-y-auto pr-1">
-                  {availablePermissions.map(perm => (
-                    <label key={perm} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/40 p-2 rounded-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/40 transition-colors">
-                      <input
-                        type="checkbox"
-                        className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
-                        checked={form.permissions.includes(perm)}
-                        onChange={() => togglePermission(perm)}
-                      />
-                      <span className="font-medium text-slate-800 dark:text-slate-300 text-[11px]">{perm}</span>
-                    </label>
+                <div className="max-h-[340px] overflow-y-auto pr-1 space-y-3">
+                  {permissionGroups.map(group => (
+                    <div key={group.label}>
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">{group.label}</p>
+                      <div className="grid grid-cols-1 gap-1.5">
+                        {group.permissions.map(perm => (
+                          <label key={perm} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/40 p-2 rounded-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/40 transition-colors">
+                            <input
+                              type="checkbox"
+                              className="rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-blue-600 focus:ring-blue-500"
+                              checked={form.permissions.includes(perm)}
+                              onChange={() => togglePermission(perm)}
+                            />
+                            <span className="font-medium text-slate-800 dark:text-slate-300 text-[11px]">{perm}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -329,7 +305,7 @@ export default function RolesManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
-                {roles.map((r: any) => (
+                {roles.filter((r: any) => r.name?.toLowerCase() !== 'admin').map((r: any) => (
                   <tr key={r._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
                     <td className="p-3 font-semibold text-slate-900 dark:text-white">{r.name}</td>
                     <td className="p-3 text-slate-600 dark:text-slate-400 font-mono text-[10px] leading-relaxed">
@@ -337,29 +313,23 @@ export default function RolesManagementPage() {
                     </td>
                     {(hasPermission('edit_roles') || hasPermission('delete_roles')) && (
                       <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
-                        {r.name.toLowerCase() !== 'admin' ? (
-                          <>
-                            {hasPermission('edit_roles') && (
-                              <button 
-                                onClick={() => handleEditClick(r)}
-                                className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 inline-block p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition"
-                                title="Edit Role"
-                              >
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                            {hasPermission('delete_roles') && (
-                              <button 
-                                onClick={() => promptDeleteRole(r._id, r.name)}
-                                className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 inline-block p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition"
-                                title="Delete Role"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-md border border-slate-300 dark:border-slate-700">Protected Admin</span>
+                        {hasPermission('edit_roles') && (
+                          <button
+                            onClick={() => handleEditClick(r)}
+                            className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 inline-block p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition"
+                            title="Edit Role"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        {hasPermission('delete_roles') && (
+                          <button
+                            onClick={() => promptDeleteRole(r._id, r.name)}
+                            className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 inline-block p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition"
+                            title="Delete Role"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         )}
                       </td>
                     )}

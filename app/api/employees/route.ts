@@ -5,27 +5,51 @@ import { verifyAuth } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
+    const authUser = await verifyAuth(req);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     await connectToDatabase();
-    
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '8', 10);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || ''; // Read status parameter
 
-    const query: any = {};
-    
+    const roleDoc = (authUser as any)._resolvedRole;
+    const isAdmin = (roleDoc?.name || '').toLowerCase() === 'admin';
+
+    const andConditions: any[] = [];
+
     // Support matching query terms against Name OR Email
     if (search) {
-      query.$or = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { 'contactInfo.email': { $regex: search, $options: 'i' } }
-      ];
+      andConditions.push({
+        $or: [
+          { fullName: { $regex: search, $options: 'i' } },
+          { 'contactInfo.email': { $regex: search, $options: 'i' } }
+        ]
+      });
     }
 
     if (status) {
-      query['officeInfo.status'] = status;
+      andConditions.push({ 'officeInfo.status': status });
     }
+
+    // Non-admins only see records visible to every role (empty visibleToRoles)
+    // or explicitly shared with their own role. Admins always see everything.
+    if (!isAdmin && roleDoc?._id) {
+      andConditions.push({
+        $or: [
+          { visibleToRoles: { $exists: false } },
+          { visibleToRoles: { $size: 0 } },
+          { visibleToRoles: roleDoc._id }
+        ]
+      });
+    }
+
+    const query: any = andConditions.length > 0 ? { $and: andConditions } : {};
 
     const skip = (page - 1) * limit;
     

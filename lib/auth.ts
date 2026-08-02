@@ -68,6 +68,11 @@ export async function verifyAuth(req: NextRequest, requiredPermission?: string) 
     const roleName = roleDoc.name || '';
     const permissions = roleDoc.permissions || [];
 
+    // Expose the resolved role doc on the returned user so callers that need
+    // it (e.g. role-based visibility filtering) don't have to re-resolve it.
+    // Existing callers only check truthiness of the return value, so this is additive.
+    (user as any)._resolvedRole = roleDoc;
+
     // Admin role automatically bypasses granular permissions
     if (roleName && roleName.toLowerCase() === 'admin') {
       return user;
