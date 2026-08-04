@@ -24,20 +24,12 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const searchParams = useSearchParams();
   const [employee, setEmployee] = useState<any>(null);
-  const [editForm, setEditForm] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [roles, setRoles] = useState<Array<{ _id: string; name: string }>>([]);
-  const [rolesLoading, setRolesLoading] = useState(true);
-  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [activeMenu, setActiveMenu] = useState<'profile' | 'activities'>('profile');
   const [activeTab, setActiveTab] = useState<string>('General Info');
   const [loading, setLoading] = useState(true);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-
-  // Dynamic Emails and Mobiles for Edit Form
-  const [emailsList, setEmailsList] = useState<string[]>(['']);
-  const [mobilesList, setMobilesList] = useState<string[]>(['']);
 
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
@@ -76,17 +68,6 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     return parts.length > 0 ? parts.join(', ') : '0 days';
   };
 
-  const populateEmailsAndMobiles = (data: any) => {
-    const ems = data?.contactInfo?.emails?.length
-      ? data.contactInfo.emails
-      : (data?.contactInfo?.email ? [data.contactInfo.email] : ['']);
-    const mbs = data?.contactInfo?.mobiles?.length
-      ? data.contactInfo.mobiles
-      : (data?.contactInfo?.mobile ? [data.contactInfo.mobile] : ['']);
-    setEmailsList(ems);
-    setMobilesList(mbs);
-  };
-
   const fetchEmployee = async () => {
     try {
       const token = getCookie('token');
@@ -96,10 +77,6 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       if (!res.ok) throw new Error('Failed to retrieve record');
       const data = await res.json();
       setEmployee(data);
-      setEditForm(JSON.parse(JSON.stringify(data)));
-      populateEmailsAndMobiles(data);
-      const roleIds = (data.visibleToRoles || []).map((r: any) => (typeof r === 'string' ? r : r._id));
-      setSelectedRoleIds(roleIds);
     } catch (e: any) {
       console.error(e);
       toast.error('Could not load personnel profile');
@@ -116,14 +93,6 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         .then(r => r.json())
         .then(d => { if (d.user) setCurrentUser(d.user); })
         .catch(() => {});
-
-      fetch('/api/roles', { headers: { Authorization: `Bearer ${token}` } })
-        .then(r => r.json())
-        .then(d => { if (Array.isArray(d)) setRoles(d); })
-        .catch(() => {})
-        .finally(() => setRolesLoading(false));
-    } else {
-      setRolesLoading(false);
     }
     if (id && id !== 'create') {
       fetchEmployee();
@@ -137,52 +106,6 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       setIsEditing(true);
     }
   }, [searchParams]);
-
-  // Helpers for editing email list
-  const handleEmailChange = (index: number, val: string) => {
-    const updated = [...emailsList];
-    updated[index] = val;
-    setEmailsList(updated);
-  };
-  const addEmailField = () => setEmailsList(prev => [...prev, '']);
-  const removeEmailField = (index: number) => {
-    if (emailsList.length <= 1) return;
-    setEmailsList(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Helpers for editing mobile list
-  const handleMobileChange = (index: number, val: string) => {
-    const updated = [...mobilesList];
-    updated[index] = val;
-    setMobilesList(updated);
-  };
-  const addMobileField = () => setMobilesList(prev => [...prev, '']);
-  const removeMobileField = (index: number) => {
-    if (mobilesList.length <= 1) return;
-    setMobilesList(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSaveProfile = async () => {
-    if (!editForm) return;
-
-    const validEmails = emailsList.map(e => e.trim()).filter(Boolean);
-    const validMobiles = mobilesList.map(m => m.trim()).filter(Boolean);
-
-    const payload = {
-      ...editForm,
-      contactInfo: {
-        ...(editForm.contactInfo || {}),
-        email: validEmails[0] || '',
-        mobile: validMobiles[0] || '',
-        emails: validEmails,
-        mobiles: validMobiles,
-      },
-      visibleToRoles: selectedRoleIds,
-    };
-
-    await updateEmployeeAPI(payload, 'Personnel profile modifications saved successfully');
-    setIsEditing(false);
-  };
 
   const hasPermission = (permission: string) => {
     if (!currentUser) return false;
@@ -214,17 +137,6 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       console.error(error);
       toast.error(error.message || 'Error saving modifications.');
     }
-  };
-
-  const handleNestedFieldChange = (section: string, field: string, value: any) => {
-    setEditForm((prev: any) => ({
-      ...prev,
-      [section]: { ...(prev[section] || {}), [field]: value }
-    }));
-  };
-
-  const handleRootFieldChange = (field: string, value: any) => {
-    setEditForm((prev: any) => ({ ...prev, [field]: value }));
   };
 
   // --- Direct Status Handlers (No Popups) ---
@@ -374,16 +286,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {isEditing ? (
-                  <input
-                    type="text"
-                    className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1.5 rounded-xl font-semibold text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-white"
-                    value={editForm?.fullName || ''}
-                    onChange={(e) => handleRootFieldChange('fullName', e.target.value)}
-                  />
-                ) : (
-                  employee?.fullName || 'No Name Registered'
-                )}
+                {employee?.fullName || 'No Name Registered'}
               </h2>
               <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1.5 ${
                 isActiveStatus
@@ -425,37 +328,12 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
           {/* HIDE EDIT BUTTON COMPLETELY IF NO PERMISSION */}
           {hasPermission('edit_employee') && (
-            isEditing ? (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleSaveProfile}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition shadow-md cursor-pointer"
-                >
-                  Save Changes
-                </button>
-                <button
-                  onClick={() => {
-                    setEditForm(JSON.parse(JSON.stringify(employee)));
-                    populateEmailsAndMobiles(employee);
-                    setIsEditing(false);
-                  }}
-                  className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-semibold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  setEditForm(JSON.parse(JSON.stringify(employee)));
-                  populateEmailsAndMobiles(employee);
-                  setIsEditing(true);
-                }}
-                className="bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition shadow-xs flex items-center gap-1.5 border border-slate-300 dark:border-slate-600/80 cursor-pointer"
-              >
-                <Edit2 className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" /> Edit Profile
-              </button>
-            )
+            <button
+              onClick={() => setIsEditing(true)}
+              className="bg-slate-100 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition shadow-xs flex items-center gap-1.5 border border-slate-300 dark:border-slate-600/80 cursor-pointer"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" /> Edit Profile
+            </button>
           )}
 
           <a
@@ -486,18 +364,9 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
                 <div className="grid grid-cols-2 gap-2 items-center">
                   <div>
                     <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Birth Date</span>
-                    {isEditing ? (
-                      <input
-                        type="date"
-                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1.5 rounded-lg focus:outline-none w-full text-xs text-slate-900 dark:text-white"
-                        value={editForm?.personalInfo?.birthDate || ''}
-                        onChange={(e) => handleNestedFieldChange('personalInfo', 'birthDate', e.target.value)}
-                      />
-                    ) : (
-                      <span className="font-bold text-slate-900 dark:text-white text-xs block">
-                        {employee?.personalInfo?.birthDate || 'N/A'}
-                      </span>
-                    )}
+                    <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                      {employee?.personalInfo?.birthDate || 'N/A'}
+                    </span>
                   </div>
 
                   <div>
@@ -513,34 +382,12 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-2.5">
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Religion</span>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-full text-xs text-slate-900 dark:text-white"
-                      value={editForm?.personalInfo?.religion || ''}
-                      onChange={(e) => handleNestedFieldChange('personalInfo', 'religion', e.target.value)}
-                    />
-                  ) : (
-                    <span className="font-semibold text-slate-900 dark:text-white block">{employee?.personalInfo?.religion || 'N/A'}</span>
-                  )}
+                  <span className="font-semibold text-slate-900 dark:text-white block">{employee?.personalInfo?.religion || 'N/A'}</span>
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-2.5">
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Marital Status</span>
-                  {isEditing ? (
-                    <select
-                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-full text-xs text-slate-900 dark:text-white"
-                      value={editForm?.personalInfo?.maritalStatus || ''}
-                      onChange={(e) => handleNestedFieldChange('personalInfo', 'maritalStatus', e.target.value)}
-                    >
-                      <option value="">Unspecified</option>
-                      <option value="Single">Single</option>
-                      <option value="Married">Married</option>
-                      <option value="Divorced">Divorced</option>
-                    </select>
-                  ) : (
-                    <span className="font-semibold text-slate-900 dark:text-white block">{employee?.personalInfo?.maritalStatus || 'N/A'}</span>
-                  )}
+                  <span className="font-semibold text-slate-900 dark:text-white block">{employee?.personalInfo?.maritalStatus || 'N/A'}</span>
                 </div>
               </div>
 
@@ -548,32 +395,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-2.5">
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Gender</span>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-full text-xs text-slate-900 dark:text-white"
-                      value={editForm?.personalInfo?.gender || ''}
-                      onChange={(e) => handleNestedFieldChange('personalInfo', 'gender', e.target.value)}
-                    />
-                  ) : (
-                    <span className="font-semibold text-slate-900 dark:text-white block">{employee?.personalInfo?.gender || 'N/A'}</span>
-                  )}
+                  <span className="font-semibold text-slate-900 dark:text-white block">{employee?.personalInfo?.gender || 'N/A'}</span>
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-2.5">
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1">Blood Group</span>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-full text-rose-500 dark:text-rose-400 font-bold text-xs"
-                      value={editForm?.personalInfo?.bloodGroup || ''}
-                      onChange={(e) => handleNestedFieldChange('personalInfo', 'bloodGroup', e.target.value)}
-                    />
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                      {employee?.personalInfo?.bloodGroup || 'N/A'}
-                    </span>
-                  )}
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                    {employee?.personalInfo?.bloodGroup || 'N/A'}
+                  </span>
                 </div>
               </div>
 
@@ -581,16 +410,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 rounded-xl p-3 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Join Date:</span>
-                  {isEditing ? (
-                    <input
-                      type="date"
-                      className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-1 rounded-lg focus:outline-none w-32 text-xs text-slate-900 dark:text-white"
-                      value={editForm?.personalInfo?.joinDate || ''}
-                      onChange={(e) => handleNestedFieldChange('personalInfo', 'joinDate', e.target.value)}
-                    />
-                  ) : (
-                    <span className="font-semibold text-slate-900 dark:text-white">{employee?.personalInfo?.joinDate || 'N/A'}</span>
-                  )}
+                  <span className="font-semibold text-slate-900 dark:text-white">{employee?.personalInfo?.joinDate || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 dark:border-slate-800">
                   <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Service Period:</span>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { ShieldAlert, ShieldCheck, Edit2, Trash2, X } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Edit2, Trash2, X, Loader2 } from 'lucide-react';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { roleSchema } from '@/lib/validations';
 import { getCookie } from '@/lib/cookies';
@@ -80,6 +80,8 @@ export default function RolesManagementPage() {
     }
   };
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldErrors({});
@@ -95,6 +97,8 @@ export default function RolesManagementPage() {
       toast.error('Please enter a valid role title.');
       return;
     }
+
+    setSubmitting(true);
 
     try {
       if (editingRoleId) {
@@ -143,6 +147,8 @@ export default function RolesManagementPage() {
       fetchRoles();
     } catch (err: any) {
       toast.error(err.message || 'Operation failed');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -274,8 +280,19 @@ export default function RolesManagementPage() {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-2.5 rounded-xl transition shadow-md">
-                {editingRoleId ? 'Save Role Changes' : 'Create Security Role'}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-2.5 rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{editingRoleId ? 'Saving Role Changes...' : 'Creating Security Role...'}</span>
+                  </>
+                ) : (
+                  <span>{editingRoleId ? 'Save Role Changes' : 'Create Security Role'}</span>
+                )}
               </button>
             </form>
           </div>

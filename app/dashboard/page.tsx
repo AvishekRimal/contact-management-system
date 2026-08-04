@@ -311,12 +311,34 @@ export default function Dashboard() {
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[11px] text-slate-600 dark:text-slate-300 min-w-0 flex-1 pl-[52px] sm:pl-0">
                     <div className="flex items-center gap-1.5 min-w-0 max-w-full sm:max-w-[200px]">
                       <Mail className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                      <span className="truncate">{visibleEmails[0] || 'No Email'}</span>
+                      {visibleEmails[0] ? (
+                        <a
+                          href={`mailto:${visibleEmails[0]}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="truncate hover:underline hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
+                          title={`Email ${visibleEmails[0]}`}
+                        >
+                          {visibleEmails[0]}
+                        </a>
+                      ) : (
+                        <span className="truncate italic text-slate-400">No Email</span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1.5 min-w-0 max-w-full sm:max-w-[160px]">
                       <Phone className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                      <span className="truncate">{visibleMobiles[0] || 'No Mobile'}</span>
+                      {visibleMobiles[0] ? (
+                        <a
+                          href={`tel:${visibleMobiles[0]}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="truncate hover:underline hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer"
+                          title={`Call ${visibleMobiles[0]}`}
+                        >
+                          {visibleMobiles[0]}
+                        </a>
+                      ) : (
+                        <span className="truncate italic text-slate-400">No Mobile</span>
+                      )}
                     </div>
 
                     {location && (
@@ -440,9 +462,15 @@ export default function Dashboard() {
                       <div className="min-w-0 flex-1">
                         {visibleEmails.length > 0 ? (
                           visibleEmails.map((email: string, idx: number) => (
-                            <div key={idx} className="truncate text-[11px]" title={email}>
+                            <a
+                              key={idx}
+                              href={`mailto:${email}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block truncate text-[11px] hover:underline hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
+                              title={`Email ${email}`}
+                            >
                               {email}
-                            </div>
+                            </a>
                           ))
                         ) : (
                           <span className="italic text-slate-400">No Email Listed</span>
@@ -461,9 +489,15 @@ export default function Dashboard() {
                       <div className="min-w-0 flex-1">
                         {visibleMobiles.length > 0 ? (
                           visibleMobiles.map((mob: string, idx: number) => (
-                            <div key={idx} className="truncate text-[11px]" title={mob}>
+                            <a
+                              key={idx}
+                              href={`tel:${mob}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block truncate text-[11px] hover:underline hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer"
+                              title={`Call ${mob}`}
+                            >
                               {mob}
-                            </div>
+                            </a>
                           ))
                         ) : (
                           <span className="italic text-slate-400">No Mobile Listed</span>

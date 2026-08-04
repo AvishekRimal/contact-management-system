@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { UserPlus, UserCheck, Edit2, Trash2, X, Upload, ShieldAlert } from 'lucide-react';
+import { UserPlus, UserCheck, Edit2, Trash2, X, Upload, ShieldAlert, Loader2 } from 'lucide-react';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { userCreateSchema, userEditSchema } from '@/lib/validations';
 import { getCookie } from '@/lib/cookies';
@@ -85,11 +85,14 @@ export default function UserManagementPage() {
     }
   };
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldErrors({});
 
     const token = getCookie('token');
+    setSubmitting(true);
     
     try {
       if (editingUserId) {
@@ -168,6 +171,8 @@ export default function UserManagementPage() {
       fetchUsersAndRoles();
     } catch (err: any) {
       toast.error(err.message || 'Operation failed');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -326,8 +331,19 @@ export default function UserManagementPage() {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-2.5 rounded-xl transition shadow-md">
-                {editingUserId ? 'Save Profile Changes' : 'Create System Account'}
+              <button
+                type="submit"
+                disabled={submitting || uploading}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-2.5 rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{editingUserId ? 'Saving Profile Changes...' : 'Creating System Account...'}</span>
+                  </>
+                ) : (
+                  <span>{editingUserId ? 'Save Profile Changes' : 'Create System Account'}</span>
+                )}
               </button>
             </form>
           </div>
