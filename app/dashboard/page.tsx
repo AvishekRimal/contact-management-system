@@ -175,7 +175,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="space-y-3 max-w-[1600px] mx-auto px-2 sm:px-3 lg:px-4 ">
       {/* Professional Header Section */}
       <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-xl backdrop-blur-xl space-y-4">
         
@@ -360,7 +360,7 @@ export default function Dashboard() {
                 <Link
                   key={emp._id}
                   href={`/dashboard/employees/${emp._id}`}
-                  className={`group relative bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/70 hover:border-blue-500/50 rounded-2xl p-4 pt-12 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-visible backdrop-blur-sm ${
+                  className={`group relative mb-7 bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/70 hover:border-blue-500/50 rounded-2xl p-4 pt-12 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-visible backdrop-blur-sm ${
                     hasResignation ? 'opacity-80 bg-slate-50/50 dark:bg-slate-900/60' : ''
                   }`}
                 >
