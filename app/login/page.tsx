@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { loginSchema } from '@/lib/validations';
-import { Lock, Mail, ArrowRight, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { setCookie } from '@/lib/cookies';
+import { Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 
 export default function LoginPage() {
@@ -44,8 +45,8 @@ export default function LoginPage() {
       if (!res.ok) {
         toast.error(data.error || 'Authentication failed');
       } else {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        setCookie('token', data.token);
+        setCookie('user', JSON.stringify(data.user));
         toast.success(`Welcome back, ${data.user.fullName}!`);
         router.push('/dashboard');
       }

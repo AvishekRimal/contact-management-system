@@ -7,6 +7,7 @@ import { ArrowLeft, Save, Upload, ShieldAlert, Sparkles, Plus, Trash2, Mail, Pho
 import Link from 'next/link';
 import { employeeSchema } from '@/lib/validations';
 import RoleVisibilitySelector from '@/components/employees/RoleVisibilitySelector';
+import { getCookie } from '@/lib/cookies';
 
 export default function CreateEmployeePage() {
   const router = useRouter();
@@ -58,7 +59,7 @@ export default function CreateEmployeePage() {
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     if (token) {
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
@@ -199,7 +200,7 @@ export default function CreateEmployeePage() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = getCookie('token');
       const res = await fetch('/api/employees', {
         method: 'POST',
         headers: {

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { ShieldAlert, UserPlus, Users, Key } from 'lucide-react';
+import { getCookie } from '@/lib/cookies';
 
 export default function AdminControlPage() {
   const [users, setUsers] = useState([]);
@@ -44,7 +45,7 @@ export default function AdminControlPage() {
 
   const handleCreateRole = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     const res = await fetch('/api/roles', {
       method: 'POST',
       headers: {
@@ -62,7 +63,7 @@ export default function AdminControlPage() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     const res = await fetch('/api/users', {
       method: 'POST',
       headers: {

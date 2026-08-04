@@ -204,7 +204,7 @@ export default function GeneralInfoTab({
             <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between">
                 <label className="text-slate-700 dark:text-slate-300 font-semibold flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" /> Mobile Phone Numbers (Primary first)
+                  <Phone className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />Phone Numbers(Primary first)
                 </label>
                 <button
                   type="button"

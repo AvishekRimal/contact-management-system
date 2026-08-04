@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import User from '@/models/User';
+import { prisma, formatUser } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { verifyAuth } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
-    const users = await User.find({}).populate('role', 'name permissions');
-    return NextResponse.json(users, { status: 200 });
+    const users = await prisma.user.findMany({
+      include: { role: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    return NextResponse.json(users.map(formatUser), { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -21,28 +22,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
 
-    await connectToDatabase();
     const { fullName, email, password, role, image } = await req.json();
 
     if (!fullName || !email || !password || !role) {
       return NextResponse.json({ error: 'Missing required account details' }, { status: 400 });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() }
+    });
     if (existingUser) {
       return NextResponse.json({ error: 'User with this email already exists' }, { status: 400 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const newUser = await User.create({
-      fullName: fullName.trim(),
-      email: email.toLowerCase().trim(),
-      passwordHash,
-      role,
-      image: image || ''
+    const newUser = await prisma.user.create({
+      data: {
+        fullName: fullName.trim(),
+        email: email.toLowerCase().trim(),
+        passwordHash,
+        roleId: role,
+        image: image || ''
+      },
+      include: { role: true }
     });
 
-    return NextResponse.json(newUser, { status: 201 });
+    return NextResponse.json(formatUser(newUser), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

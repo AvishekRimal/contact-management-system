@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import Employee from '@/models/Employee';
+import { prisma } from '@/lib/db';
 import { verifyAuth } from '@/lib/auth';
 import { resignationSchema } from '@/lib/validations';
+import crypto from 'crypto';
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,27 +11,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges to view resignations' }, { status: 403 });
     }
 
-    await connectToDatabase();
-
-    const employees = await Employee.find({
-      'officeActivities.resignations.0': { $exists: true }
-    }).select('_id fullName contactInfo officeInfo officeActivities.resignations');
+    const employees = await prisma.employee.findMany();
 
     const resignationsList: any[] = [];
     employees.forEach(emp => {
-      if (emp.officeActivities?.resignations) {
-        emp.officeActivities.resignations.forEach((r: any) => {
+      const officeActivities: any = emp.officeActivities || {};
+      const contactInfo: any = emp.contactInfo || {};
+      const officeInfo: any = emp.officeInfo || {};
+
+      if (officeActivities.resignations && Array.isArray(officeActivities.resignations)) {
+        officeActivities.resignations.forEach((r: any) => {
           resignationsList.push({
-            _id: r._id,
-            employeeId: emp._id,
+            _id: r._id || r.id,
+            employeeId: emp.id,
             employeeName: emp.fullName,
-            employeeEmail: emp.contactInfo?.email || '',
-            department: emp.officeInfo?.department || '',
+            employeeEmail: contactInfo.email || emp.email || '',
+            department: officeInfo.department || emp.department || '',
             date: r.date,
             reason: r.reason,
             status: r.status || 'Completed',
             url: r.url || '',
-            createdAt: (r as any).createdAt || (emp as any).updatedAt || new Date().toISOString(),
+            createdAt: r.createdAt || emp.updatedAt?.toISOString() || new Date().toISOString(),
           });
         });
       }
@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges to add resignation' }, { status: 403 });
     }
 
-    await connectToDatabase();
     const payload = await req.json();
 
     const val = resignationSchema.safeParse(payload);
@@ -65,29 +64,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Please select an employee' }, { status: 400 });
     }
 
-    const employee = await Employee.findById(payload.employeeId);
+    const employee = await prisma.employee.findUnique({
+      where: { id: payload.employeeId }
+    });
     if (!employee) {
       return NextResponse.json({ error: 'Target employee record not found' }, { status: 404 });
     }
 
+    const newResignationId = crypto.randomUUID();
     const newResignation = {
+      _id: newResignationId,
+      id: newResignationId,
       date: payload.date,
       reason: payload.reason,
       status: payload.status || 'Completed',
       url: payload.url || '',
     };
 
-    if (!employee.officeActivities) {
-      employee.officeActivities = { contracts: [], resignations: [], disciplinaryCases: [] };
-    }
-    if (!employee.officeActivities.resignations) {
-      employee.officeActivities.resignations = [];
-    }
+    const officeActivities: any = employee.officeActivities || { contracts: [], resignations: [], disciplinaryCases: [] };
+    const resignationsList = Array.isArray(officeActivities.resignations) ? [...officeActivities.resignations, newResignation] : [newResignation];
+    
+    const updatedOfficeActivities = {
+      ...officeActivities,
+      resignations: resignationsList
+    };
 
-    employee.officeActivities.resignations.push(newResignation);
-    await employee.save();
+    const updatedEmployee = await prisma.employee.update({
+      where: { id: payload.employeeId },
+      data: {
+        officeActivities: updatedOfficeActivities
+      }
+    });
 
-    return NextResponse.json({ message: 'Resignation registered successfully', employee }, { status: 201 });
+    return NextResponse.json({ message: 'Resignation registered successfully', employee: updatedEmployee }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -1,9 +1,6 @@
 import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
-import { connectToDatabase } from './db';
-import User from '@/models/User';
-import Role from '@/models/Role';
+import { prisma, formatRole, formatUser } from './db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-use-env-in-production';
 
@@ -36,55 +33,41 @@ export async function verifyAuth(req: NextRequest, requiredPermission?: string) 
       return null;
     }
 
-    await connectToDatabase();
-    
-    // Fetch raw user record
-    const user = await User.findById(decoded.userId);
-    if (!user) {
+    // Fetch user with role via Prisma
+    const rawUser = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: { role: true },
+    });
+
+    if (!rawUser) {
       console.warn(`[auth] User matching ID ${decoded.userId} not found`);
       return null;
     }
 
-    // --- Manual Reference Resolution Fallback ---
-    // If Mongoose leaves the reference as an ObjectId or populates it incorrectly, 
-    // we query the Role collection directly to resolve the target document.
-    let roleDoc = null;
-    if (user.role) {
-      if (mongoose.Types.ObjectId.isValid(user.role)) {
-        // It is an unpopulated ObjectId
-        roleDoc = await Role.findById(user.role);
-      } else {
-        // It is already a populated object
-        roleDoc = user.role;
-      }
-    }
-
+    const roleDoc = rawUser.role ? formatRole(rawUser.role) : null;
     if (!roleDoc) {
-      console.warn(`[auth] User "${user.email}" has an invalid or missing role reference`);
+      console.warn(`[auth] User "${rawUser.email}" has an invalid or missing role reference`);
       return null;
     }
 
-    // Standardize role parameters
+    const formattedUser = formatUser(rawUser);
+    (formattedUser as any)._resolvedRole = roleDoc;
+
     const roleName = roleDoc.name || '';
     const permissions = roleDoc.permissions || [];
 
-    // Expose the resolved role doc on the returned user so callers that need
-    // it (e.g. role-based visibility filtering) don't have to re-resolve it.
-    // Existing callers only check truthiness of the return value, so this is additive.
-    (user as any)._resolvedRole = roleDoc;
-
     // Admin role automatically bypasses granular permissions
     if (roleName && roleName.toLowerCase() === 'admin') {
-      return user;
+      return formattedUser;
     }
 
     // Dynamic granular permission validation
     if (requiredPermission && !permissions.includes(requiredPermission)) {
-      console.warn(`[auth] User "${user.email}" is missing permission: "${requiredPermission}"`);
+      console.warn(`[auth] User "${rawUser.email}" is missing permission: "${requiredPermission}"`);
       return null;
     }
 
-    return user;
+    return formattedUser;
   } catch (error: any) {
     console.error('[auth] Internal verifyAuth error:', error.message);
     return null;

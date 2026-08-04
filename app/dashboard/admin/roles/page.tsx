@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { ShieldAlert, ShieldCheck, Edit2, Trash2, X } from 'lucide-react';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { roleSchema } from '@/lib/validations';
+import { getCookie } from '@/lib/cookies';
 
 export default function RolesManagementPage() {
   const [roles, setRoles] = useState([]);
@@ -50,7 +51,7 @@ export default function RolesManagementPage() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     if (token) {
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
@@ -83,7 +84,7 @@ export default function RolesManagementPage() {
     e.preventDefault();
     setFieldErrors({});
 
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
 
     // Zod validation
     const validation = roleSchema.safeParse(form);
@@ -166,7 +167,7 @@ export default function RolesManagementPage() {
   const confirmDeleteRole = async () => {
     if (!roleToDelete) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = getCookie('token');
       const res = await fetch(`/api/roles/${roleToDelete.id}`, {
         method: 'DELETE',
         headers: {

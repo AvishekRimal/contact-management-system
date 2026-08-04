@@ -5,10 +5,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { 
   ChevronDown, ChevronRight, LayoutDashboard, UserCog, LogOut, Menu, X,
-  ChevronLeft, PanelLeftClose, PanelLeftOpen, ShieldCheck, UserCheck, ShieldAlert,
-  Sun, Moon, FileText
+  PanelLeftClose, PanelLeftOpen, Sun, Moon
 } from 'lucide-react';
 import Image from 'next/image';
+import { getCookie, setCookie, removeCookie } from '@/lib/cookies';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -19,9 +19,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [userMenuExpanded, setUserMenuExpanded] = useState(true);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
-  // Initialize theme from localStorage or document
+  // Initialize theme from cookie or document
   useEffect(() => {
-    const savedTheme = (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
+    const savedTheme = (getCookie('theme') as 'dark' | 'light') || 'dark';
     setTheme(savedTheme);
     if (savedTheme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
+    setCookie('theme', nextTheme);
     if (nextTheme === 'dark') {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
@@ -47,13 +47,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Fetch fresh user and permission details from /api/auth/me
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     if (!token) {
       router.push('/login');
       return;
     }
 
-    const savedSidebarState = localStorage.getItem('sidebar_expanded');
+    const savedSidebarState = getCookie('sidebar_expanded');
     if (savedSidebarState !== null) {
       setSidebarExpanded(savedSidebarState === 'true');
     }
@@ -65,13 +65,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .then(data => {
         if (data.user) {
           setUser(data.user);
-          localStorage.setItem('user', JSON.stringify(data.user));
+          setCookie('user', JSON.stringify(data.user));
         } else {
           router.push('/login');
         }
       })
       .catch(() => {
-        const storedUser = localStorage.getItem('user');
+        const storedUser = getCookie('user');
         if (storedUser) setUser(JSON.parse(storedUser));
         else router.push('/login');
       });
@@ -80,12 +80,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const toggleSidebar = () => {
     const nextState = !sidebarExpanded;
     setSidebarExpanded(nextState);
-    localStorage.setItem('sidebar_expanded', String(nextState));
+    setCookie('sidebar_expanded', String(nextState));
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    removeCookie('token');
+    removeCookie('user');
     router.push('/login');
   };
 
@@ -112,7 +112,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const canSeeUsersDirectory = hasPermission('view_users') || hasPermission('add_users') || hasPermission('edit_users') || hasPermission('delete_users');
   const canSeeRoleSecurity = hasPermission('view_roles') || hasPermission('add_roles') || hasPermission('edit_roles') || hasPermission('delete_roles');
   const showUserManagement = canSeeUsersDirectory || canSeeRoleSecurity;
-  const showResignations = hasPermission('view_resignation') || hasPermission('manage_resignation');
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex flex-col md:flex-row font-sans selection:bg-blue-500 selection:text-white transition-colors duration-200">
@@ -120,10 +119,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile Header Bar */}
       <div className="md:hidden bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex justify-between items-center z-40 sticky top-0">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white text-xs">
-            RC
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-xs">
+            <Image src="/smlogo.ico" alt="Company Logo" width={100} height={32} className="mx-auto" />
           </div>
-          <span className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">RMS Directory</span>
+          <span className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Contact Management</span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -158,8 +157,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               }
               {sidebarExpanded && (
                 <div className="min-w-0 transition-opacity duration-200">
-                  {/* <span className="text-sm font-bold text-slate-900 dark:text-white tracking-tight block truncate">Personnel Hub</span>
-                  <span className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 block tracking-widest uppercase">Admin System</span> */}
                   <Image src="/logo.svg" alt="Company Logo" width={140} height={80} className="mx-auto" />
                 </div>
               )}

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import User from '@/models/User';
+import { prisma, formatUser } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { verifyAuth } from '@/lib/auth';
 
@@ -14,7 +13,6 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
 
-    await connectToDatabase();
     const { id } = await params;
     const { fullName, email, password, role, image } = await req.json();
 
@@ -25,21 +23,25 @@ export async function PUT(
     const updateData: any = {
       fullName: fullName.trim(),
       email: email.toLowerCase().trim(),
-      role,
+      roleId: role,
       image: image || ''
     };
 
-    // Only hash and update password if a new password value is provided
     if (password && password.trim() !== '') {
       updateData.passwordHash = await bcrypt.hash(password, 10);
     }
 
-    const updatedUser = await User.findByIdAndUpdate(id, { $set: updateData }, { new: true });
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      include: { role: true }
+    }).catch(() => null);
+
     if (!updatedUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json(updatedUser, { status: 200 });
+    return NextResponse.json(formatUser(updatedUser), { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -55,15 +57,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
 
-    await connectToDatabase();
     const { id } = await params;
 
-    // Prevent deleting your own logged-in session account
-    if (requester._id.toString() === id) {
+    if (requester._id?.toString() === id || requester.id === id) {
       return NextResponse.json({ error: 'Self-deletion of current session is prohibited' }, { status: 400 });
     }
 
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedUser = await prisma.user.delete({ where: { id } }).catch(() => null);
     if (!deletedUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }

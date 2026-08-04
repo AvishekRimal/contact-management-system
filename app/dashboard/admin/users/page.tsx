@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { UserPlus, UserCheck, Edit2, Trash2, X, Upload, ShieldAlert } from 'lucide-react';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { userCreateSchema, userEditSchema } from '@/lib/validations';
+import { getCookie } from '@/lib/cookies';
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState([]);
@@ -40,7 +41,7 @@ export default function UserManagementPage() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     if (token) {
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
@@ -88,7 +89,7 @@ export default function UserManagementPage() {
     e.preventDefault();
     setFieldErrors({});
 
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     
     try {
       if (editingUserId) {
@@ -194,7 +195,7 @@ export default function UserManagementPage() {
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = getCookie('token');
       const res = await fetch(`/api/users/${userToDelete.id}`, {
         method: 'DELETE',
         headers: {

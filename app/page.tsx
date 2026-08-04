@@ -2,13 +2,14 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCookie } from '@/lib/cookies';
 
 export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
     // Check if user is already authenticated
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     
     if (token) {
       router.replace('/dashboard');

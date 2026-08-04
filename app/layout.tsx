@@ -35,7 +35,8 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var saved = localStorage.getItem('theme');
+                  var match = document.cookie.match(new RegExp('(?:^|; )theme=([^;]*)'));
+                  var saved = match ? decodeURIComponent(match[1]) : null;
                   var theme = saved || 'dark';
                   if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
@@ -57,4 +58,3 @@ export default function RootLayout({
     </html>
   );
 }
-

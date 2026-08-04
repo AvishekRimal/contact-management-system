@@ -1,23 +1,39 @@
-import mongoose from 'mongoose';
+import { PrismaClient } from '@prisma/client';
 
-const MONGODB_URI = process.env.MONGODB_URI || '';
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
-}
+export const prisma = globalForPrisma.prisma || new PrismaClient();
 
-let cached = (global as any).mongoose;
-
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
 }
 
 export async function connectToDatabase() {
-  if (cached.conn) return cached.conn;
+  return prisma;
+}
 
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((m) => m);
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
+export function formatRole(role: any) {
+  if (!role) return null;
+  return {
+    ...role,
+    _id: role.id,
+  };
+}
+
+export function formatUser(user: any) {
+  if (!user) return null;
+  const role = user.role ? formatRole(user.role) : user.roleId;
+  return {
+    ...user,
+    _id: user.id,
+    role,
+  };
+}
+
+export function formatEmployee(emp: any) {
+  if (!emp) return null;
+  return {
+    ...emp,
+    _id: emp.id,
+  };
 }

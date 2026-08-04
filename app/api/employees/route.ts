@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import Employee from '@/models/Employee';
+import { prisma, formatEmployee } from '@/lib/db';
 import { verifyAuth } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
@@ -10,54 +9,52 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '8', 10);
     const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') || ''; // Read status parameter
+    const status = searchParams.get('status') || '';
 
     const roleDoc = (authUser as any)._resolvedRole;
     const isAdmin = (roleDoc?.name || '').toLowerCase() === 'admin';
 
     const andConditions: any[] = [];
 
-    // Support matching query terms against Name OR Email
     if (search) {
       andConditions.push({
-        $or: [
-          { fullName: { $regex: search, $options: 'i' } },
-          { 'contactInfo.email': { $regex: search, $options: 'i' } }
+        OR: [
+          { fullName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } }
         ]
       });
     }
 
     if (status) {
-      andConditions.push({ 'officeInfo.status': status });
+      andConditions.push({ status });
     }
 
-    // Non-admins only see records visible to every role (empty visibleToRoles)
-    // or explicitly shared with their own role. Admins always see everything.
     if (!isAdmin && roleDoc?._id) {
       andConditions.push({
-        $or: [
-          { visibleToRoles: { $exists: false } },
-          { visibleToRoles: { $size: 0 } },
-          { visibleToRoles: roleDoc._id }
+        OR: [
+          { visibleToRoles: { isEmpty: true } },
+          { visibleToRoles: { has: roleDoc._id } },
+          { visibleToRoles: { has: roleDoc.id } }
         ]
       });
     }
 
-    const query: any = andConditions.length > 0 ? { $and: andConditions } : {};
-
+    const where = andConditions.length > 0 ? { AND: andConditions } : {};
     const skip = (page - 1) * limit;
-    
-    const total = await Employee.countDocuments(query);
-    const employees = await Employee.find(query)
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
+
+    const total = await prisma.employee.count({ where });
+    const rawEmployees = await prisma.employee.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const employees = rawEmployees.map(formatEmployee);
 
     return NextResponse.json({
       employees,
@@ -80,20 +77,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
 
-    await connectToDatabase();
     const payload = await req.json();
 
-    if (!payload.contactInfo?.email || !payload.officeInfo?.department) {
+    const email = payload.contactInfo?.email || payload.email;
+    const department = payload.officeInfo?.department || payload.department;
+
+    if (!email || !department) {
       return NextResponse.json({ error: 'Missing core profile fields (email, department)' }, { status: 400 });
     }
 
-    const existingEmployee = await Employee.findOne({ 'contactInfo.email': payload.contactInfo.email });
+    const existingEmployee = await prisma.employee.findFirst({
+      where: { email: email.toLowerCase().trim() }
+    });
     if (existingEmployee) {
       return NextResponse.json({ error: 'An employee with this email is already registered' }, { status: 400 });
     }
 
-    const employee = await Employee.create(payload);
-    return NextResponse.json(employee, { status: 201 });
+    const newEmployee = await prisma.employee.create({
+      data: {
+        fullName: payload.fullName || '',
+        email: email.toLowerCase().trim(),
+        department,
+        status: payload.officeInfo?.status || payload.status || 'Active',
+        personalInfo: payload.personalInfo || {},
+        officeInfo: payload.officeInfo || {},
+        contactInfo: payload.contactInfo || {},
+        shiftAndPunch: payload.shiftAndPunch || {},
+        emergencyContact: payload.emergencyContact || {},
+        qualifications: payload.qualifications || [],
+        skills: payload.skills || [],
+        experience: payload.experience || [],
+        references: payload.references || [],
+        documents: payload.documents || [],
+        officeActivities: payload.officeActivities || {},
+        visibleToRoles: payload.visibleToRoles || [],
+      }
+    });
+
+    return NextResponse.json(formatEmployee(newEmployee), { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

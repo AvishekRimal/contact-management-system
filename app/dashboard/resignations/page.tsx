@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { resignationSchema } from '@/lib/validations';
+import { getCookie } from '@/lib/cookies';
 
 export default function ResignationsManagementPage() {
   const [resignations, setResignations] = useState<any[]>([]);
@@ -40,7 +41,7 @@ export default function ResignationsManagementPage() {
 
   const fetchResignations = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getCookie('token');
       const res = await fetch('/api/resignations', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -58,7 +59,7 @@ export default function ResignationsManagementPage() {
 
   const fetchEmployees = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getCookie('token');
       const res = await fetch('/api/employees?limit=1000', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -72,7 +73,7 @@ export default function ResignationsManagementPage() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     if (token) {
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
@@ -144,7 +145,7 @@ export default function ResignationsManagementPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFieldErrors({});
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
 
     const val = resignationSchema.safeParse(form);
     if (!val.success) {
@@ -215,7 +216,7 @@ export default function ResignationsManagementPage() {
   const confirmDeleteResignation = async () => {
     if (!resignationToDelete) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = getCookie('token');
       const res = await fetch(`/api/resignations/${resignationToDelete.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }

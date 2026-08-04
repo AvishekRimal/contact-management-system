@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import Employee from '@/models/Employee';
+import { prisma } from '@/lib/db';
 import { verifyAuth } from '@/lib/auth';
 
 export async function PUT(
@@ -13,29 +12,54 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges to edit resignation' }, { status: 403 });
     }
 
-    await connectToDatabase();
     const { id } = await params;
     const payload = await req.json();
 
-    const employee = await Employee.findOne({ 'officeActivities.resignations._id': id });
-    if (!employee) {
+    const employees = await prisma.employee.findMany();
+    let targetEmp: any = null;
+    let targetResignation: any = null;
+
+    for (const emp of employees) {
+      const officeActivities: any = emp.officeActivities || {};
+      if (Array.isArray(officeActivities.resignations)) {
+        const item = officeActivities.resignations.find((r: any) => r._id === id || r.id === id);
+        if (item) {
+          targetEmp = emp;
+          targetResignation = item;
+          break;
+        }
+      }
+    }
+
+    if (!targetEmp || !targetResignation) {
       return NextResponse.json({ error: 'Resignation record not found' }, { status: 404 });
     }
 
-    const resignationItem = employee.officeActivities?.resignations?.find(
-      (r: any) => r._id?.toString() === id
-    );
+    const officeActivities: any = targetEmp.officeActivities || {};
+    const updatedResignations = officeActivities.resignations.map((r: any) => {
+      if (r._id === id || r.id === id) {
+        return {
+          ...r,
+          date: payload.date !== undefined ? payload.date : r.date,
+          reason: payload.reason !== undefined ? payload.reason : r.reason,
+          status: payload.status !== undefined ? payload.status : r.status,
+          url: payload.url !== undefined ? payload.url : r.url,
+        };
+      }
+      return r;
+    });
 
-    if (resignationItem) {
-      if (payload.date !== undefined) resignationItem.date = payload.date;
-      if (payload.reason !== undefined) resignationItem.reason = payload.reason;
-      if (payload.status !== undefined) resignationItem.status = payload.status;
-      if (payload.url !== undefined) resignationItem.url = payload.url;
+    const updatedEmployee = await prisma.employee.update({
+      where: { id: targetEmp.id },
+      data: {
+        officeActivities: {
+          ...officeActivities,
+          resignations: updatedResignations
+        }
+      }
+    });
 
-      await employee.save();
-    }
-
-    return NextResponse.json({ message: 'Resignation updated successfully', employee }, { status: 200 });
+    return NextResponse.json({ message: 'Resignation updated successfully', employee: updatedEmployee }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -51,20 +75,40 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges to delete resignation' }, { status: 403 });
     }
 
-    await connectToDatabase();
     const { id } = await params;
 
-    const employee = await Employee.findOne({ 'officeActivities.resignations._id': id });
-    if (!employee) {
+    const employees = await prisma.employee.findMany();
+    let targetEmp: any = null;
+
+    for (const emp of employees) {
+      const officeActivities: any = emp.officeActivities || {};
+      if (Array.isArray(officeActivities.resignations)) {
+        const item = officeActivities.resignations.find((r: any) => r._id === id || r.id === id);
+        if (item) {
+          targetEmp = emp;
+          break;
+        }
+      }
+    }
+
+    if (!targetEmp) {
       return NextResponse.json({ error: 'Resignation record not found' }, { status: 404 });
     }
 
-    if (employee.officeActivities?.resignations) {
-      employee.officeActivities.resignations = employee.officeActivities.resignations.filter(
-        (r: any) => r._id?.toString() !== id
-      );
-      await employee.save();
-    }
+    const officeActivities: any = targetEmp.officeActivities || {};
+    const filteredResignations = (officeActivities.resignations || []).filter(
+      (r: any) => r._id !== id && r.id !== id
+    );
+
+    await prisma.employee.update({
+      where: { id: targetEmp.id },
+      data: {
+        officeActivities: {
+          ...officeActivities,
+          resignations: filteredResignations
+        }
+      }
+    });
 
     return NextResponse.json({ message: 'Resignation record deleted' }, { status: 200 });
   } catch (error: any) {

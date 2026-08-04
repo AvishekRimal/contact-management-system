@@ -7,6 +7,7 @@ import {
   Briefcase, Mail, Sparkles, UserCheck, UserX, Edit2, FileText, ExternalLink, X
 } from 'lucide-react';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
+import { getCookie } from '@/lib/cookies';
 import GeneralInfoTab from '@/components/employees/GeneralInfoTab';
 import QualificationsTab from '@/components/employees/QualificationsTab';
 import SkillTab from '@/components/employees/SkillTab';
@@ -87,7 +88,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   const fetchEmployee = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getCookie('token');
       const res = await fetch(`/api/employees/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -108,7 +109,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getCookie('token');
     if (token) {
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
@@ -195,7 +196,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   const updateEmployeeAPI = async (updatedData: any, successMessage = 'Record updated successfully') => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getCookie('token');
       const res = await fetch(`/api/employees/${id}`, {
         method: 'PUT',
         headers: {

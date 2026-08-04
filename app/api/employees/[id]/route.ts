@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
-import Employee from '@/models/Employee';
+import { prisma, formatEmployee } from '@/lib/db';
 import { verifyAuth } from '@/lib/auth';
 
-// Admins bypass visibility restrictions entirely; everyone else can only
-// access records that are unrestricted (empty visibleToRoles) or explicitly
-// shared with their own role.
 function canAccessRecord(employee: any, authUser: any) {
   const roleDoc = (authUser as any)._resolvedRole;
   const isAdmin = (roleDoc?.name || '').toLowerCase() === 'admin';
@@ -14,7 +10,8 @@ function canAccessRecord(employee: any, authUser: any) {
   const visibleToRoles: any[] = employee.visibleToRoles || [];
   if (visibleToRoles.length === 0) return true;
 
-  return visibleToRoles.some((r: any) => r.toString() === roleDoc?._id?.toString());
+  const userRoleId = roleDoc?._id || roleDoc?.id;
+  return visibleToRoles.some((r: any) => r.toString() === userRoleId?.toString());
 }
 
 export async function GET(
@@ -27,15 +24,17 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
-
-    // Explicitly unwrap dynamic params in Next.js 15
     const { id } = await params;
 
-    const employee = await Employee.findById(id);
-    if (!employee) {
+    const rawEmployee = await prisma.employee.findUnique({
+      where: { id }
+    });
+
+    if (!rawEmployee) {
       return NextResponse.json({ error: 'Employee registry record not found' }, { status: 404 });
     }
+
+    const employee = formatEmployee(rawEmployee);
 
     if (!canAccessRecord(employee, authUser)) {
       return NextResponse.json({ error: 'Forbidden: You do not have visibility access to this record' }, { status: 403 });
@@ -57,13 +56,12 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
 
-    await connectToDatabase();
-
-    // Explicitly unwrap dynamic params in Next.js 15
     const { id } = await params;
     const payload = await req.json();
 
-    const existingEmployee = await Employee.findById(id);
+    const existingEmployee = await prisma.employee.findUnique({
+      where: { id }
+    });
     if (!existingEmployee) {
       return NextResponse.json({ error: 'Employee registry record not found' }, { status: 404 });
     }
@@ -72,17 +70,33 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden: You do not have visibility access to this record' }, { status: 403 });
     }
 
-    const updatedEmployee = await Employee.findByIdAndUpdate(
-      id,
-      { $set: payload },
-      { new: true, runValidators: true }
-    );
+    const email = payload.contactInfo?.email || payload.email || existingEmployee.email;
+    const department = payload.officeInfo?.department || payload.department || existingEmployee.department;
+    const status = payload.officeInfo?.status || payload.status || existingEmployee.status;
 
-    if (!updatedEmployee) {
-      return NextResponse.json({ error: 'Employee registry record not found' }, { status: 404 });
-    }
+    const updated = await prisma.employee.update({
+      where: { id },
+      data: {
+        fullName: payload.fullName ?? existingEmployee.fullName,
+        email: email.toLowerCase().trim(),
+        department,
+        status,
+        personalInfo: payload.personalInfo ?? (existingEmployee.personalInfo as any),
+        officeInfo: payload.officeInfo ?? (existingEmployee.officeInfo as any),
+        contactInfo: payload.contactInfo ?? (existingEmployee.contactInfo as any),
+        shiftAndPunch: payload.shiftAndPunch ?? (existingEmployee.shiftAndPunch as any),
+        emergencyContact: payload.emergencyContact ?? (existingEmployee.emergencyContact as any),
+        qualifications: payload.qualifications ?? (existingEmployee.qualifications as any),
+        skills: payload.skills ?? (existingEmployee.skills as any),
+        experience: payload.experience ?? (existingEmployee.experience as any),
+        references: payload.references ?? (existingEmployee.references as any),
+        documents: payload.documents ?? (existingEmployee.documents as any),
+        officeActivities: payload.officeActivities ?? (existingEmployee.officeActivities as any),
+        visibleToRoles: payload.visibleToRoles ?? existingEmployee.visibleToRoles,
+      }
+    });
 
-    return NextResponse.json(updatedEmployee, { status: 200 });
+    return NextResponse.json(formatEmployee(updated), { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -98,12 +112,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden: Insufficient privileges' }, { status: 403 });
     }
 
-    await connectToDatabase();
-
-    // Explicitly unwrap dynamic params in Next.js 15
     const { id } = await params;
 
-    const existingEmployee = await Employee.findById(id);
+    const existingEmployee = await prisma.employee.findUnique({
+      where: { id }
+    });
     if (!existingEmployee) {
       return NextResponse.json({ error: 'Employee registry record not found' }, { status: 404 });
     }
@@ -112,10 +125,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden: You do not have visibility access to this record' }, { status: 403 });
     }
 
-    const deletedEmployee = await Employee.findByIdAndDelete(id);
-    if (!deletedEmployee) {
-      return NextResponse.json({ error: 'Employee registry record not found' }, { status: 404 });
-    }
+    await prisma.employee.delete({ where: { id } });
 
     return NextResponse.json({ message: 'Employee profile deleted successfully' }, { status: 200 });
   } catch (error: any) {
