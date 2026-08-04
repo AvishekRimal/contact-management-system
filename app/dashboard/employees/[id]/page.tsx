@@ -18,6 +18,7 @@ import ContractTab from '@/components/employees/ContractTab';
 import ResignationTab from '@/components/employees/ResignationTab';
 import DisciplinaryCaseTab from '@/components/employees/DisciplinaryCaseTab';
 import { DeleteModalState } from '@/components/employees/types';
+import EmployeeForm from '@/components/employees/EmployeeForm';
 
 export default function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -325,6 +326,21 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   if (loading) return <div className="py-28 text-center text-xs font-semibold text-slate-400 animate-pulse">Loading personnel profile structure...</div>;
   if (!employee) return <div className="py-28 text-center text-rose-400 font-semibold text-xs">Personnel record not found.</div>;
 
+  if (isEditing) {
+    return (
+      <EmployeeForm
+        mode="edit"
+        initialData={employee}
+        employeeId={id}
+        onCancel={() => setIsEditing(false)}
+        onSuccess={() => {
+          setIsEditing(false);
+          fetchEmployee();
+        }}
+      />
+    );
+  }
+
   const profileTabs = ['General Info', 'Qualifications', 'Skill', 'Experience', 'Reference', 'Document Management'].filter(tab => {
     if (tab === 'Qualifications') return hasPermission('view_qualification');
     if (tab === 'Skill') return hasPermission('view_skill');
@@ -631,29 +647,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
           <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-xl min-h-[480px]">
             {activeTab === 'General Info' && (
-              <GeneralInfoTab
-                employee={employee}
-                editForm={editForm}
-                isEditing={isEditing}
-                emailsList={emailsList}
-                mobilesList={mobilesList}
-                setEditForm={setEditForm}
-                setIsEditing={setIsEditing}
-                handleRootFieldChange={handleRootFieldChange}
-                handleNestedFieldChange={handleNestedFieldChange}
-                handleEmailChange={handleEmailChange}
-                addEmailField={addEmailField}
-                removeEmailField={removeEmailField}
-                handleMobileChange={handleMobileChange}
-                addMobileField={addMobileField}
-                removeMobileField={removeMobileField}
-                handleSaveProfile={handleSaveProfile}
-                populateEmailsAndMobiles={populateEmailsAndMobiles}
-                roles={roles}
-                rolesLoading={rolesLoading}
-                selectedRoleIds={selectedRoleIds}
-                setSelectedRoleIds={setSelectedRoleIds}
-              />
+              <GeneralInfoTab employee={employee} />
             )}
 
             {activeTab === 'Qualifications' && (

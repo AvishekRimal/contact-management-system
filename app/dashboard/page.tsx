@@ -330,7 +330,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto pl-[52px] sm:pl-0">
                     {hasPermission('edit_employee') && (
                       <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/employees/${emp._id}?edit=true`); }}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/employees/${emp._id}/edit`); }}
                         className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition"
                       >
                         <Edit2 className="h-4 w-4" />
@@ -384,7 +384,7 @@ export default function Dashboard() {
                   <div className="absolute top-2.5 right-2.5 flex items-center gap-1 z-10 opacity-15 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     {hasPermission('edit_employee') && (
                       <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/employees/${emp._id}?edit=true`); }}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/employees/${emp._id}/edit`); }}
                         className="p-1.5 text-slate-400 bg-white/90 dark:bg-slate-900/80 hover:text-blue-500 rounded-lg shadow-sm transition"
                         title="Edit Profile"
                       >
