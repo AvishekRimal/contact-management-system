@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  Briefcase, Mail, Sparkles, UserCheck, UserX, Edit2, FileText, ExternalLink, X
+  Briefcase, Mail, Sparkles, UserCheck, UserX, Edit2, FileText, ExternalLink, X, ArrowLeft
 } from 'lucide-react';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { getCookie } from '@/lib/cookies';
@@ -22,6 +22,7 @@ import EmployeeForm from '@/components/employees/EmployeeForm';
 
 export default function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [employee, setEmployee] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -276,7 +277,14 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       {/* Header Profile Banner Card */}
       <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-xl backdrop-blur-xl">
         <div className="flex items-center gap-4">
-          <div className="w-18 h-18 rounded-2xl bg-slate-100 dark:bg-slate-900 overflow-hidden relative border-2 border-slate-200 dark:border-slate-700 shadow-md">
+          <button
+            onClick={() => router.back()}
+            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600/80 text-slate-700 dark:text-slate-200 transition-all flex items-center gap-2 cursor-pointer shrink-0 text-xs font-semibold group shadow-xs"
+            title="Back to Directory"
+          >
+            <ArrowLeft className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+          <div className="w-18 h-18 rounded-2xl bg-slate-100 dark:bg-slate-900 overflow-hidden relative border-2 border-slate-200 dark:border-slate-700 shadow-md shrink-0">
             <img
               src={employee?.documents?.find((d: any) => d.name === 'Profile Picture')?.url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'}
               className="w-full h-full object-cover"

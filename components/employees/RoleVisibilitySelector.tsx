@@ -45,8 +45,8 @@ export default function RoleVisibilitySelector({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-xl h-full flex flex-col justify-between space-y-4">
-      <div className="space-y-3 flex-1 flex flex-col">
+    <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700/60 pb-3 shrink-0">
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -72,7 +72,7 @@ export default function RoleVisibilitySelector({
         ) : selectableRoles.length === 0 ? (
           <p className="text-xs text-slate-400 dark:text-slate-500">No roles configured yet.</p>
         ) : (
-          <div className="grid grid-cols-1 gap-1.5 max-h-[280px] overflow-y-auto pr-1 flex-1 scrollbar-thin">
+          <div className="grid grid-cols-1 gap-1.5 max-h-[250px] overflow-y-auto pr-1 scrollbar-thin">
             {selectableRoles.map(role => (
               <label
                 key={role._id}

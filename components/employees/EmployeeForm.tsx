@@ -361,8 +361,8 @@ export default function EmployeeForm({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Core Identification + Visibility & Access split layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          <div className="lg:col-span-8 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5 flex flex-col justify-between">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div className="lg:col-span-8 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-2xl p-6 shadow-xl space-y-5">
             <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-700/60 pb-3">
               <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -494,7 +494,7 @@ export default function EmployeeForm({
             </div>
           </div>
 
-          <div className="lg:col-span-4 h-full">
+          <div className="lg:col-span-4">
             <RoleVisibilitySelector
               roles={roles}
               selectedRoleIds={selectedRoleIds}

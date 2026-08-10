@@ -278,10 +278,10 @@ export default function Dashboard() {
               const { visibleEmails, visibleMobiles, hasResignation, isActive, avatarUrl, location, age } = getEmployeeMeta(emp);
 
               return (
-                <Link
+                <div
                   key={emp._id}
-                  href={`/dashboard/employees/${emp._id}`}
-                  className={`group relative flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 hover:border-blue-500/50 rounded-xl pl-5 pr-3 py-2.5 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
+                  onClick={() => router.push(`/dashboard/employees/${emp._id}`)}
+                  className={`group relative flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 hover:border-blue-500/50 rounded-xl pl-5 pr-3 py-2.5 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer ${
                     hasResignation ? 'opacity-80 bg-slate-50/50 dark:bg-slate-900/60' : ''
                   }`}
                 >
@@ -312,14 +312,18 @@ export default function Dashboard() {
                     <div className="flex items-center gap-1.5 min-w-0 max-w-full sm:max-w-[200px]">
                       <Mail className="h-3.5 w-3.5 shrink-0 text-blue-500" />
                       {visibleEmails[0] ? (
-                        <a
-                          href={`mailto:${visibleEmails[0]}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="truncate hover:underline hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.location.href = `mailto:${visibleEmails[0]}`;
+                          }}
+                          className="truncate hover:underline hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer text-left"
                           title={`Email ${visibleEmails[0]}`}
                         >
                           {visibleEmails[0]}
-                        </a>
+                        </button>
                       ) : (
                         <span className="truncate italic text-slate-400">No Email</span>
                       )}
@@ -328,14 +332,18 @@ export default function Dashboard() {
                     <div className="flex items-center gap-1.5 min-w-0 max-w-full sm:max-w-[160px]">
                       <Phone className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
                       {visibleMobiles[0] ? (
-                        <a
-                          href={`tel:${visibleMobiles[0]}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="truncate hover:underline hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer"
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.location.href = `tel:${visibleMobiles[0]}`;
+                          }}
+                          className="truncate hover:underline hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer text-left"
                           title={`Call ${visibleMobiles[0]}`}
                         >
                           {visibleMobiles[0]}
-                        </a>
+                        </button>
                       ) : (
                         <span className="truncate italic text-slate-400">No Mobile</span>
                       )}
@@ -368,7 +376,7 @@ export default function Dashboard() {
                     )}
                     <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-transform ml-1" />
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
@@ -379,10 +387,10 @@ export default function Dashboard() {
               const { visibleEmails, extraEmailsCount, visibleMobiles, extraMobilesCount, hasResignation, isActive, avatarUrl, location, age } = getEmployeeMeta(emp);
 
               return (
-                <Link
+                <div
                   key={emp._id}
-                  href={`/dashboard/employees/${emp._id}`}
-                  className={`group relative mb-7 bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/70 hover:border-blue-500/50 rounded-2xl p-4 pt-12 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-visible backdrop-blur-sm ${
+                  onClick={() => router.push(`/dashboard/employees/${emp._id}`)}
+                  className={`group relative mb-7 bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/70 hover:border-blue-500/50 rounded-2xl p-4 pt-12 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-visible backdrop-blur-sm cursor-pointer ${
                     hasResignation ? 'opacity-80 bg-slate-50/50 dark:bg-slate-900/60' : ''
                   }`}
                 >
@@ -462,15 +470,14 @@ export default function Dashboard() {
                       <div className="min-w-0 flex-1">
                         {visibleEmails.length > 0 ? (
                           visibleEmails.map((email: string, idx: number) => (
-                            <a
+                            <span
                               key={idx}
-                              href={`mailto:${email}`}
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `mailto:${email}`; }}
                               className="block truncate text-[11px] hover:underline hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
                               title={`Email ${email}`}
                             >
                               {email}
-                            </a>
+                            </span>
                           ))
                         ) : (
                           <span className="italic text-slate-400">No Email Listed</span>
@@ -489,15 +496,18 @@ export default function Dashboard() {
                       <div className="min-w-0 flex-1">
                         {visibleMobiles.length > 0 ? (
                           visibleMobiles.map((mob: string, idx: number) => (
-                            <a
+                            <span
                               key={idx}
-                              href={`tel:${mob}`}
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.location.href = `tel:${mob}`;
+                              }}
                               className="block truncate text-[11px] hover:underline hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer"
                               title={`Call ${mob}`}
                             >
                               {mob}
-                            </a>
+                            </span>
                           ))
                         ) : (
                           <span className="italic text-slate-400">No Mobile Listed</span>
@@ -516,7 +526,7 @@ export default function Dashboard() {
                     <span>View Profile</span>
                     <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
