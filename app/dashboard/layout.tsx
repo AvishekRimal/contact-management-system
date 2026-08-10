@@ -17,11 +17,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuExpanded, setUserMenuExpanded] = useState(true);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
   // Initialize theme from cookie or document
   useEffect(() => {
-    const savedTheme = (getCookie('theme') as 'dark' | 'light') || 'dark';
+    const savedTheme = (getCookie('theme') as 'dark' | 'light') || 'light';
     setTheme(savedTheme);
     if (savedTheme === 'dark') {
       document.documentElement.classList.add('dark');

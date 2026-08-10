@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased light`}
       suppressHydrationWarning
     >
       <head>
@@ -37,7 +37,7 @@ export default function RootLayout({
                 try {
                   var match = document.cookie.match(new RegExp('(?:^|; )theme=([^;]*)'));
                   var saved = match ? decodeURIComponent(match[1]) : null;
-                  var theme = saved || 'dark';
+                  var theme = saved || 'light';
                   if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
                     document.documentElement.classList.remove('light');
